@@ -3,14 +3,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/mman.h>
-#include  <sys/types.h>
+#include <sys/types.h>
+#include <unistd.h>
+#include <semaphore.h>
+#include <sys/shm.h>
+#include <fcntl.h>
 #include "master.h"
 #include "worker.h"
-
-typedef struct partition_bounds {
-   long int start;
-   long int end;
-} partition_bounds;
 
 
 #endif
