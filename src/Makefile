@@ -19,9 +19,19 @@ idealEngine: $(OBJ)
 	gcc -o $@ $^ $(CFLAGS) -lpthread -lrt
 
 .PHONY: clean
-
 clean:
-	rm -f $(ODIR)/*.o *~ core $(INCDIR)/*~ 
+	rm -f $(ODIR)/*.o *~ core $(INCDIR)/*~; \
+	rm -f idealEngine
 
+
+.PHONY: run
 run:
 	./idealEngine
+
+debug:
+	gdb ./idealEngine
+
+cr:
+	$(MAKE) clean	
+	$(MAKE) 	
+	$(MAKE) run
