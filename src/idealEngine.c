@@ -12,9 +12,6 @@ sem_t *sem_master_completed;
 partition_bounds partition_starts[NUM_PARTITIONS_MAP];
 struct timeval stop, start;
 
-sem_t* setup_sem(int value, char * name);
-void cleanup_sem(sem_t* sem, char* name);
-
 int main() {
   int i;
   int* barrier_count;
@@ -105,7 +102,8 @@ int main() {
     
     sem_wait(sem_master_ready);
     printf("Ready to start master\n");
-    
+
+    initMapper(partition_starts);
     delegateTasks();
     
     printf("Done with master\n");
@@ -138,9 +136,8 @@ int main() {
   //  printf("My pid is %d.\n",pid);
 
 
-  //Barrier to wait for all Children
-  // https://stackoverflow.com/questions/6331301/implementing-an-n-process-barrier-using-semaphores
-  
+  barrier(fork_sem,mutex,barrier_count,NUM_PARTITIONS_MAP + NUM_PARTITIONS_REDUCE-1);
+  /*
   sem_wait(mutex);
   (*barrier_count)++;
   //  printf("Barrier: %d\n",*barrier_count);
@@ -150,7 +147,7 @@ int main() {
   }  
   sem_wait(fork_sem);
   sem_post(fork_sem);
-
+  */
   if (pid != 0) {
     printf("All worker processes made.\n");
     sem_post(sem_master_ready);
@@ -175,23 +172,4 @@ int main() {
     /* if a crash occurs during the execution         */
   }
   return(0);
-}
-
-sem_t* setup_sem(int value, char * name) {
-  sem_t* sem;
-  sem = sem_open (name, O_CREAT | O_EXCL, 0644, value);
-  if (errno == EEXIST) { //checks to see if semaphore is still alive
-    cleanup_sem(sem,name);
-    printf("%s: not properly deallocated, reinitializing.\n",name);
-    sem = sem_open(name, O_CREAT | O_EXCL, 0644, value);
-  }
-  return sem;
-}
-
-void cleanup_sem(sem_t* sem, char* name) {
-  sem_unlink(name);
-  /* unlink prevents the semaphore existing forever */
-  /* if a crash occurs during the execution         */
-  sem_close(sem);
-  printf("Closed semaphore %s\n",name);
 }
