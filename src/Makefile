@@ -5,10 +5,10 @@ CFLAGS=-I$(IDIR)
 ODIR=obj
 LDIR =../lib
 
-_DEPS = idealEngine.h master.h worker.h
+_DEPS = idealEngine.h
 DEPS = $(patsubst %,$(IDIR)/%,$(_DEPS))
 
-_OBJ = idealEngine.o # hellofunc.o 
+_OBJ = idealEngine.o master.o 
 OBJ = $(patsubst %,$(ODIR)/%,$(_OBJ))
 
 

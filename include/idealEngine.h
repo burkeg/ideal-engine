@@ -11,6 +11,7 @@
 #include <sys/time.h>
 #include <sys/shm.h>
 #include "master.h"
-#include "worker.h"
+//#include "worker.h"
+
 
 #endif

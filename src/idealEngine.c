@@ -1,12 +1,14 @@
 #include "idealEngine.h"
 
 /*
-https://stackoverflow.com/questions/16400820/c-how-to-use-posix-semaphores-on-forked-processes
+  https://stackoverflow.com/questions/16400820/c-how-to-use-posix-semaphores-on-forked-processes
 */
 key_t shmkey;
 int shmid;   
 sem_t *fork_sem;
 sem_t *mutex;
+sem_t *sem_master_ready;
+sem_t *sem_master_completed;
 partition_bounds partition_starts[NUM_PARTITIONS_MAP];
 struct timeval stop, start;
 
@@ -24,10 +26,14 @@ int main() {
   pid_t pid;
   char * lock_str = "lSem";
   char * fork_str = "fSem";
+  char * master_str = "mSem";
+  char * completed_str = "cSem";
+
+  printf("\n\n");
   
   /* initialize a shared variable in shared memory */
   shmkey = ftok ("/dev/null", 5);       /* valid directory name and a number */
-  printf ("shmkey for barrier_count = %d\n", shmkey);
+  //  printf ("shmkey for barrier_count = %d\n", shmkey);
   shmid = shmget (shmkey, sizeof (int), 0644 | IPC_CREAT);
   if (shmid < 0){                           /* shared memory error check */
     perror ("shmget\n");
@@ -36,15 +42,17 @@ int main() {
 
   barrier_count = (int *) shmat (shmid, NULL, 0);   /* attach p to shared memory */
   *barrier_count = 0;
-  printf ("barrier_count=%d is allocated in shared memory.\n\n", *barrier_count);
+  //  printf ("barrier_count=%d is allocated in shared memory.\n\n", *barrier_count);
   
   
   /* initialize semaphores for shared processes */
   fork_sem = setup_sem(0, fork_str);
   mutex = setup_sem(1, lock_str);
+  sem_master_ready = setup_sem(0, master_str);
+  sem_master_completed = setup_sem(0, completed_str);
   
   pid = fork();
-  printf("pid: %d",pid);
+  // printf("pid: %d",pid);
   
   gettimeofday(&start, NULL);
   if (pid==0) {
@@ -71,7 +79,7 @@ int main() {
     fread(buffer,4,numEl,fp);
     
     for (i = 0; i < numEl; i++) {
-       printf("%d\n",(int)buffer[i]);
+      //printf("%d\n",(int)buffer[i]);
     }
     //printf("%d\n",NUM_PARTITIONS_MAP);
     //mapping = (int *) mmap(startingArr,400,PROT_WRITE,);
@@ -90,41 +98,44 @@ int main() {
       //      printf("%d:(%ld,%ld)\n",i,partition_starts[i].start,partition_starts[i].end);
     }
     fclose(fp);
-    printf("\nJust Exiting...\n");
+    //    printf("\nJust Exiting...\n");
     //gettimeofday(&stop, NULL);
     //printf("BEFORE %lu\n", stop.tv_usec - start.tv_usec);
     sem_post(fork_sem);
     
-
+    sem_wait(sem_master_ready);
+    printf("Ready to start master\n");
+    
+    delegateTasks();
+    
+    printf("Done with master\n");
+    sem_post(sem_master_completed);
+    
     return (0);
   }
   //  sem_wait(fork_sem);
   //printf("Should make through but not enter 2nd stage yet\n");
   sem_wait(fork_sem);
-  printf("\nEntered..\n");
+  //printf("\nEntered..\n");
   
   
   //gettimeofday(&stop, NULL);
   //printf("AFTER %lu\n", stop.tv_usec - start.tv_usec);
-  printf("\n--------------\n");
+  // printf("\n--------------\n");
 
   //creates n workers
   for (i = 0; i < NUM_PARTITIONS_MAP + NUM_PARTITIONS_REDUCE - 1; i++) {
     pid = fork ();
     if (pid < 0) {
       /* check for error      */
-      sem_unlink("pSem");   
-      sem_close(fork_sem);
-      printf("Closed semaphore\n");  
-      /* unlink prevents the semaphore existing forever */
-      /* if a crash occurs during the execution         */
+      cleanup_sem(fork_sem,fork_str);
       printf ("Fork error.\n");
     }
     else if (pid == 0)
       break;                  /* child processes */
   }
   
-  printf("My pid is %d.\n",pid);
+  //  printf("My pid is %d.\n",pid);
 
 
   //Barrier to wait for all Children
@@ -132,7 +143,7 @@ int main() {
   
   sem_wait(mutex);
   (*barrier_count)++;
-  printf("Barrier: %d\n",*barrier_count);
+  //  printf("Barrier: %d\n",*barrier_count);
   sem_post(mutex);
   if (*barrier_count == NUM_PARTITIONS_MAP + NUM_PARTITIONS_REDUCE-1) {
     sem_post(fork_sem);
@@ -142,8 +153,12 @@ int main() {
 
   if (pid != 0) {
     printf("All worker processes made.\n");
+    sem_post(sem_master_ready);
+    sem_wait(sem_master_completed);
   }
 
+  //Cleanup after finished
+  
   if (pid != 0) {
 
     /* shared memory detach */
@@ -153,7 +168,9 @@ int main() {
   
     /* cleanup semaphores */
     cleanup_sem(fork_sem,fork_str);
-    printf("Closed semaphore\n");
+    cleanup_sem(mutex,lock_str);
+    cleanup_sem(sem_master_ready,master_str);
+    cleanup_sem(sem_master_completed,completed_str);
     /* unlink prevents the semaphore existing forever */
     /* if a crash occurs during the execution         */
   }
@@ -173,5 +190,8 @@ sem_t* setup_sem(int value, char * name) {
 
 void cleanup_sem(sem_t* sem, char* name) {
   sem_unlink(name);
+  /* unlink prevents the semaphore existing forever */
+  /* if a crash occurs during the execution         */
   sem_close(sem);
+  printf("Closed semaphore %s\n",name);
 }
