@@ -1,5 +1,11 @@
 #include "semUtils.h"
 
+sem_t* open_existing_sem(char * name) {
+  sem_t* sem;
+  sem = sem_open (name, 0);
+  return sem;
+}
+
 sem_t* setup_sem(int value, char * name) {
   sem_t* sem;
   sem = sem_open (name, O_CREAT | O_EXCL, 0644, value);

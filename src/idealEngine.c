@@ -12,7 +12,7 @@ sem_t *sem_master_completed;
 partition_bounds partition_starts[NUM_PARTITIONS_MAP];
 struct timeval stop, start;
 
-int main() {
+int main (int argc, char *argv[]) {
   int i;
   int* barrier_count;
   int *data;
@@ -26,7 +26,7 @@ int main() {
   char * master_str = "mSem";
   char * completed_str = "cSem";
 
-  printf("\n\n");
+  exe_name = argv[0];
   
   /* initialize a shared variable in shared memory */
   shmkey = ftok ("/dev/null", 5);       /* valid directory name and a number */
@@ -54,7 +54,7 @@ int main() {
   gettimeofday(&start, NULL);
   if (pid==0) {
     //Master
-    
+    /*
     
     fp = fopen("data.hex","r");
     if (fp==NULL) {
@@ -82,28 +82,31 @@ int main() {
     //mapping = (int *) mmap(startingArr,400,PROT_WRITE,);
 
     fseek(fp,4,SEEK_SET);
-    partition_starts[0].start=ftell(fp);
+    *(partition_starts[0].start)=ftell(fp);
     for (i=1; i < NUM_PARTITIONS_MAP; i++) {
       fseek(fp,size/NUM_PARTITIONS_MAP,SEEK_CUR);
-      partition_starts[i-1].end=ftell(fp)-1;
-      partition_starts[i].start=ftell(fp);
+      *(partition_starts[i-1].end)=ftell(fp)-1;
+      *(partition_starts[i].start)=ftell(fp);
     }
     fseek(fp,0,SEEK_END);
-    partition_starts[NUM_PARTITIONS_MAP-1].end=ftell(fp);
+    *(partition_starts[NUM_PARTITIONS_MAP-1].end)=ftell(fp);
   
     for (i=0; i < NUM_PARTITIONS_MAP; i++) {
       //      printf("%d:(%ld,%ld)\n",i,partition_starts[i].start,partition_starts[i].end);
     }
     fclose(fp);
+    */
+
     //    printf("\nJust Exiting...\n");
     //gettimeofday(&stop, NULL);
     //printf("BEFORE %lu\n", stop.tv_usec - start.tv_usec);
     sem_post(fork_sem);
+    printf("Ready to start master\n");
     
     sem_wait(sem_master_ready);
-    printf("Ready to start master\n");
+    printf("Ready to start master for real\n");
 
-    initMapper(partition_starts);
+    initMaster();
     delegateTasks();
     
     printf("Done with master\n");

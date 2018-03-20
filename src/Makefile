@@ -8,7 +8,7 @@ LDIR =../lib
 _DEPS = idealEngine.h
 DEPS = $(patsubst %,$(IDIR)/%,$(_DEPS))
 
-_OBJ = idealEngine.o master.o worker.o semUtils.o
+_OBJ = idealEngine.o master.o worker.o semUtils.o userFuncts.o
 OBJ = $(patsubst %,$(ODIR)/%,$(_OBJ))
 
 
@@ -28,10 +28,16 @@ clean:
 run:
 	./idealEngine
 
+.PHONY: debug
 debug:
 	gdb ./idealEngine
 
+.PHONY: cr
 cr:
 	$(MAKE) clean	
 	$(MAKE) 	
 	$(MAKE) run
+
+c:
+	$(MAKE) clean	
+	$(MAKE) 
