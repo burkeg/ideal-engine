@@ -11,14 +11,15 @@
 #include <sys/time.h>
 #include <sys/shm.h>
 #include <sys/ipc.h>
+#include <sys/queue.h>
 #include "master.h"
 #include "worker.h"
 #include "semUtils.h"
 #include "userFuncts.h"
-
+#include "simpleArray.h"
 #define NUM_PARTITIONS_MAP 4
 #define NUM_PARTITIONS_REDUCE 4
-#define NUM_WORKERS 8
+#define NUM_WORKERS 6
 
 //Worker status
 #define IDLE 0
@@ -30,7 +31,7 @@
 #define MAPPER 1
 #define REDUCER 2
 
-#define WORKER_SHM_SIZE 4
+#define WORKER_SHM_SIZE 3
 #define MAPPER_SHM_SIZE 4
 #define REDUCER_SHM_SIZE 4
 #define FILENAMES_SHM_SIZE 4
@@ -43,28 +44,32 @@ typedef struct partition_bounds {
 typedef struct mapper_data {
   partition_bounds mapBound;
   partition_bounds reduceBounds[NUM_PARTITIONS_REDUCE];
-  char *mmapping;
+  long int * shmBuffer;
 } mapper_data;
 
 
 typedef struct reducer_data {
-  partition_bounds reduceBounds[NUM_PARTITIONS_MAP];
-  char *mmapping;
+  partition_bounds reduceBounds[NUM_PARTITIONS_MAP];   
+  long int * shmBuffer; 
 } reducer_data;
 
 typedef struct worker_data {
-  int *worker_type;
-  int *status;
-  int *task_index;
-  int *worker_index;
-  char *mmapping_filenames;
-  int *mmapping;
+  int *worker_type;                   //points to mmapping
+  int *status;                        //points to mmapping
+  int *task_index;                    //points to mmapping
+  char *sem_start_str;                //unique to workers
+  char *sem_end_str;                  //unique to workers
+  //char *filenames[NUM_PARTITIONS_MAP];//points to mmapping_filenames
+  //Should be kept internally
+  char *mmapping_filenames;           //shared
+  int *mmapping;                      //shared
 } worker_data;
 
 typedef struct master_data {
   mapper_data mapInfo[NUM_PARTITIONS_MAP];
   reducer_data reduceInfo[NUM_PARTITIONS_REDUCE];
   worker_data workerInfo[NUM_WORKERS];
+  int *finished;
 } master_data;
 
 char* exe_name;

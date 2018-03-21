@@ -3,6 +3,6 @@
 
 #include "idealEngine.h"
 
-void work();
+void work(int);
 
 #endif

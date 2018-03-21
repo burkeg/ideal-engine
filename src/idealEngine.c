@@ -25,8 +25,9 @@ int main (int argc, char *argv[]) {
   char * fork_str = "fSem";
   char * master_str = "mSem";
   char * completed_str = "cSem";
-
+  int myID;
   exe_name = argv[0];
+  printf("FIRST PID:%d\n",getpid());
   
   /* initialize a shared variable in shared memory */
   shmkey = ftok ("/dev/null", 5);       /* valid directory name and a number */
@@ -52,7 +53,7 @@ int main (int argc, char *argv[]) {
   // printf("pid: %d",pid);
   
   gettimeofday(&start, NULL);
-  if (pid==0) {
+  if (pid!=0) {
     //Master
     /*
     
@@ -107,12 +108,17 @@ int main (int argc, char *argv[]) {
     printf("Ready to start master for real\n");
 
     initMaster();
+    
+    printf("Done initializing master\n");
+    sem_post(sem_master_completed);
+    
     delegateTasks();
     
     printf("Done with master\n");
     sem_post(sem_master_completed);
     
-    return (0);
+    return 0;
+    printf("PULLING HAIR OUT");
   }
   //  sem_wait(fork_sem);
   //printf("Should make through but not enter 2nd stage yet\n");
@@ -125,21 +131,24 @@ int main (int argc, char *argv[]) {
   // printf("\n--------------\n");
 
   //creates n workers
-  for (i = 0; i < NUM_PARTITIONS_MAP + NUM_PARTITIONS_REDUCE - 1; i++) {
+  myID=NUM_WORKERS;
+  for (i = 0; i < NUM_WORKERS - 2; i++) {
     pid = fork ();
     if (pid < 0) {
-      /* check for error      */
+      /* check for error */
       cleanup_sem(fork_sem,fork_str);
       printf ("Fork error.\n");
     }
     else if (pid == 0)
-      break;                  /* child processes */
+      break;             /* child processes */     
+    myID=i+1;
+    
   }
   
-  //  printf("My pid is %d.\n",pid);
+  printf("My ID,PID is %d,%d.\n",myID,getpid());
 
 
-  barrier(fork_sem,mutex,barrier_count,NUM_PARTITIONS_MAP + NUM_PARTITIONS_REDUCE-1);
+  // barrier(fork_sem,mutex,barrier_count,NUM_WORKERS-1);
   /*
   sem_wait(mutex);
   (*barrier_count)++;
@@ -156,11 +165,15 @@ int main (int argc, char *argv[]) {
     sem_post(sem_master_ready);
     sem_wait(sem_master_completed);
   }
+  
+  barrier(fork_sem,mutex,barrier_count,NUM_WORKERS-1);
+  work(myID);
+
+  
 
   //Cleanup after finished
   
   if (pid != 0) {
-
     /* shared memory detach */
     shmdt (barrier_count);
 

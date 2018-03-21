@@ -2,4 +2,6 @@
 #define MASTER_H
 #include "idealEngine.h"
 
+int findFinishedWorker ();
+
 #endif
