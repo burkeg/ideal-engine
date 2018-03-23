@@ -17,9 +17,9 @@
 #include "semUtils.h"
 #include "userFuncts.h"
 #include "simpleArray.h"
-#define NUM_PARTITIONS_MAP 4
+#define NUM_PARTITIONS_MAP 8
 #define NUM_PARTITIONS_REDUCE 4
-#define NUM_WORKERS 6
+#define NUM_WORKERS 4
 
 //Worker status
 #define IDLE 0
@@ -49,20 +49,17 @@ typedef struct mapper_data {
 
 
 typedef struct reducer_data {
-  partition_bounds reduceBounds[NUM_PARTITIONS_MAP];   
+  partition_bounds reduceBounds[NUM_PARTITIONS_MAP];
   long int * shmBuffer; 
 } reducer_data;
 
 typedef struct worker_data {
   int *worker_type;                   //points to mmapping
-  int *status;                        //points to mmapping
   int *task_index;                    //points to mmapping
-  char *sem_start_str;                //unique to workers
-  char *sem_end_str;                  //unique to workers
-  //char *filenames[NUM_PARTITIONS_MAP];//points to mmapping_filenames
-  //Should be kept internally
+  char *workers_not_empty;            //unique to workers
+  int *finished;                      //shared
   char *mmapping_filenames;           //shared
-  int *mmapping;                      //shared
+  int *mmapping;                      //shared  
 } worker_data;
 
 typedef struct master_data {
@@ -74,10 +71,6 @@ typedef struct master_data {
 
 char* exe_name;
 
-void initMaster();
-void delegateTasks();
-void mapTask (partition_bounds* bound);
-void reduceTask (partition_bounds* bound);
 /*
 sem_t* open_existing_sem(char * name);
 sem_t* setup_sem(int value, char * name);

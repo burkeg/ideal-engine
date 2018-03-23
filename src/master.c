@@ -2,7 +2,6 @@
 
 master_data masterInfo;
 
-//partition_bounds bound[NUM_PARTITIONS_REDUCE]
 
 void initMaster() {
   int i,j;
@@ -30,7 +29,9 @@ void initMaster() {
      printf("%d",masterInfo.mapInfo[i].mapBound.start);
      printf(",%d\n",masterInfo.mapInfo[i].mapBound.end);
      }*/
-  //  filenames = specify_intermediate_filenames();
+
+  
+  //Worker data
   for (i=0;i<NUM_WORKERS;i++) {
     shmkey=ftok(exe_name,idCount);
     shmid = shmget (shmkey, sizeof (int)*4, 0644 | IPC_CREAT);
@@ -44,15 +45,17 @@ void initMaster() {
     //populate the master data structure with useful worker process
     //information
     masterInfo.workerInfo[i].worker_type=&(masterInfo.workerInfo[i].mmapping[0]);
-    masterInfo.workerInfo[i].status=&(masterInfo.workerInfo[i].mmapping[1]);
     masterInfo.workerInfo[i].task_index=&(masterInfo.workerInfo[i].mmapping[2]);
     *(masterInfo.workerInfo[i].worker_type)=63;
     *(masterInfo.workerInfo[i].task_index)=255;
-    *(masterInfo.workerInfo[i].status)=WORKING;
     idCount++;
   }
   
-  
+
+
+
+
+  //Mapper partition data
   for (i=0;i<NUM_PARTITIONS_MAP;i++) {
     
     shmkey=ftok(exe_name,idCount);
@@ -71,6 +74,9 @@ void initMaster() {
   }
 
 
+
+  
+  //Reducer Partition data
   for (i=0;i<NUM_PARTITIONS_REDUCE;i++) {
     
     shmkey=ftok(exe_name,idCount);
@@ -87,6 +93,9 @@ void initMaster() {
     idCount++;
   }
 
+
+
+  //Intermediate Filenames
   shmkey=ftok(exe_name,idCount);
   shmid = shmget (shmkey, sizeof (char)*255*NUM_PARTITIONS_MAP, 0644 | IPC_CREAT);
   if (shmid < 0){ //shared memory error check
@@ -100,91 +109,76 @@ void initMaster() {
     masterInfo.workerInfo[i].mmapping_filenames = (char *) shmat (shmid, NULL, 0);
   }
   idCount++;
-  
-  
-  /*
 
-    masterInfo = malloc(sizeof(master_data));
-    masterInfo->mapInfo=malloc(sizeof(mapper_data *)*NUM_PARTITIONS_MAP);
-    masterInfo->reduceInfo=malloc(sizeof(reducer_data *)*NUM_PARTITIONS_REDUCE);
-    masterInfo->workerInfo=malloc(sizeof(worker_data *)*NUM_WORKERS);
-    printf("did master\n");
+
+
+
+  //Finished Flag
+  shmkey=ftok(exe_name,idCount);
+  shmid = shmget (shmkey, sizeof (int)*NUM_WORKERS, 0644 | IPC_CREAT);
+  if (shmid < 0){ //shared memory error check
+    perror ("shmget\n");
+    exit (1);
+  }
+  for (i=0;i<NUM_WORKERS;i++) {
+    
+    printf("Shared memory allocated for finished flag in workers (ID,shmid,shmkey:%d,%d,%d\n",idCount,shmid,shmkey);
+    
+    masterInfo.workerInfo[i].finished = (int *) shmat (shmid, NULL, 0);
+  }
+  printf("Shared memory allocated for finished flag in master (ID,shmid,shmkey:%d,%d,%d\n",idCount,shmid,shmkey);
   
-    for (i=0;i<NUM_PARTITIONS_MAP;i++) {
-    printf("inside 1\n");
-    printf("%03d\n",masterInfo->);
-    masterInfo->mapInfo[i]->mapBound=malloc(sizeof(partition_bounds));
-    masterInfo->mapInfo[i]->reduceBounds=malloc(sizeof(partition_bounds *) * NUM_PARTITIONS_MAP);
-    for (j=0;j<NUM_PARTITIONS_REDUCE;j++) {
-    printf("inside 1\n");
-    masterInfo->mapInfo[i]->reduceBounds[j]=malloc(sizeof(partition_bounds));
-    }
-    }
-    printf("did map\n");
+  masterInfo.finished = (int *) shmat (shmid, NULL, 0);
+  idCount++;
+
+
+
+
+
+
   
-    for (i=0;i<NUM_PARTITIONS_REDUCE;i++) {
-    for (j=0;j<NUM_PARTITIONS_MAP;j++) {
-    masterInfo->reduceInfo[i]->reduceBounds[j]=malloc(sizeof(partition_bounds));
-    }
-    }
-    printf("did reduce\n");
-  
-    for (i=0;i<NUM_WORKERS;i++) {
-    masterInfo->workerInfo[i]->worker_type=malloc(sizeof(int *));
-    masterInfo->workerInfo[i]->status=malloc(sizeof(int *));
-    masterInfo->workerInfo[i]->task_index=malloc(sizeof(int *));
-    masterInfo->workerInfo[i]->worker_index=malloc(sizeof(int *));
-    }  
-    printf("did workers\n");
-  
-    printf("hi\n");
-    for (i=0;i<NUM_PARTITIONS_MAP;i++) {
-    printf("hi inside 1\n");
-    //*(masterInfo->mapInfo[i]->mapBound->start)=0;//bound[i].start;
-    printf("hi inside 2\n");
-    //*(masterInfo->mapInfo[i]->mapBound->end)=*(bound[i].end);
-    }
-    printf("hi\n");
-  */
 }
 
 void delegateTasks() {
   int i;
   sem_t *workers_not_empty;
-  sem_t *workers_not_full;
-  sem_t *workers_mutex;
-  sem_t *worker_sem_tmp;
+  sem_t *sem_worker_can_start[NUM_WORKERS];
   char *workers_not_empty_str = "wksActive";
-  char *workers_not_full_str = "wkscompleted";
-  char *workers_mutex_str = "wksMutex";
+  char *worker_tmp_name;
   int freeWorker;
   int deployedMap;
   
   workers_not_empty = setup_sem(0,workers_not_empty_str);
-  workers_not_full = setup_sem(0,workers_not_full_str);
-  workers_mutex = setup_sem(1,workers_mutex_str);
-
-  for (i=0;i<NUM_PARTITIONS_MAP;i++) {
-    //    printf("status:%d\n",masterInfo->mapInfo[i]->status);
-    //if(masterInfo->mapInfo[i]->status == IDLE){
-
-    printf("assign a worker to mapping\n");
-      
-    //}
-    
+  
+  for (i=0;i<NUM_WORKERS;i++) {
+    worker_tmp_name=malloc(sizeof(char)*255);
+    sprintf(worker_tmp_name,"worker%03d",i);
+    sem_worker_can_start[i] = setup_sem(0,worker_tmp_name);
+    free(worker_tmp_name);
   }
+
   //Define heads
   simpleArray * workersAvailable = allocBuff(NUM_WORKERS);
   simpleArray * workersUnavailable = allocBuff(NUM_WORKERS);
 
   
-  simpleArray * mappersAvailable = allocBuff(NUM_WORKERS);
-  simpleArray * mappersUnavailable = allocBuff(NUM_WORKERS);
+  simpleArray * mappersAvailable = allocBuff(NUM_PARTITIONS_MAP);
+  simpleArray * mappersUnavailable = allocBuff(NUM_PARTITIONS_MAP);
   
-  simpleArray * reducersAvailable = allocBuff(NUM_WORKERS);
-  simpleArray * reducersUnavailable = allocBuff(NUM_WORKERS);
-  simpleArray * reducersComplete = allocBuff(NUM_WORKERS);
-  
+  simpleArray * reducersAvailable = allocBuff(NUM_PARTITIONS_REDUCE);
+  simpleArray * reducersUnavailable = allocBuff(NUM_PARTITIONS_REDUCE);
+  simpleArray * reducersComplete = allocBuff(NUM_PARTITIONS_REDUCE);
+
+  //Populate buffers
+  for (i=0;i<NUM_WORKERS;i++) {
+    push(workersAvailable,i);
+  }
+  for (i=0;i<NUM_PARTITIONS_MAP;i++) {
+    push(mappersAvailable,i);
+  }
+  for (i=0;i<NUM_PARTITIONS_REDUCE;i++) {
+    push(reducersAvailable,i);
+  }
   //Magic Happens here
   //
   //
@@ -193,40 +187,59 @@ void delegateTasks() {
   printf("Begin map phase.\n");
   //While there are still remaining mappings
   while (!isEmpty(mappersAvailable)) {
-    
+
     //While there are no avaliable workers, wait for a signal
     //that a worker has completed
+    printf("### mappers Available\n");
     if (isEmpty(workersAvailable)) {
+      printf("### No workers available\n");
       //find a worker that finished and move it to the
       //Available queue, also move the corresponding map
       //to the Complete queue 
       sem_wait(workers_not_empty);
-      //assuming the worker who won grabbed the lock
-      freeWorker=*(masterInfo.finished);
+
+      for (i=0;i<NUM_WORKERS;i++) {
+	if (masterInfo.workerInfo[0].finished[i] != 0) {
+	  break;
+	}
+      }
+      if (i==NUM_WORKERS)
+	printf("If this prints, I'm a bad programmer.\n");
+      masterInfo.workerInfo[0].finished[i]=0;
+      //mapper now unavailable
+      printf("### Mapper %d done.\n",*(masterInfo.workerInfo[i].task_index));
+      push(mappersUnavailable,*(masterInfo.workerInfo[i].task_index));
+
+      //worker no longer available
+      removeByValue(workersAvailable,*(masterInfo.workerInfo[i].task_index));
       
       //worker now available
-      push(workersAvailable,freeWorker);
+      push(workersAvailable,i);
 
       //worker no longer unavailable
-      removeByValue(workersUnavailable,freeWorker);
-      sem_post(workers_mutex);
+      removeByValue(workersUnavailable,i);
+      
+      printf("### Worker %d now free.\n",i);
     }
     //There is at least 1 worker that is free to do a map
 
     //Choose a worker to give a job
     freeWorker=pop(workersAvailable);
     deployedMap=pop(mappersAvailable);
+    
+    printf("### Worker %d selected to do mapping %d.\n",freeWorker,deployedMap);
     //Populate the shared memory of that worker with the
     //up-to-date copy from master
+    populateShm(freeWorker,deployedMap,MAPPER);
     
     //Move the mapper from the Available to Unavailable queue
     push(mappersUnavailable,deployedMap);
     
     //Signal that worker to wake up
-    worker_sem_tmp=open_existing_sem(masterInfo.workerInfo[freeWorker].sem_start_str);
-    sem_post(worker_sem_tmp);
+    sem_post(sem_worker_can_start[freeWorker]);
   }
 
+  printf("ALL MAPPERS SCHEDULED\n");
   //All mappings have been scheduled, wait for leftovers to finish
   while (!isEmpty(mappersUnavailable)) {
     //implement this
@@ -246,19 +259,17 @@ void delegateTasks() {
   deallocBuff(reducersComplete);
   
   cleanup_sem(workers_not_empty,workers_not_empty_str);
-  cleanup_sem(workers_not_full,workers_not_full_str);
-  cleanup_sem(workers_mutex,workers_mutex_str);
-}
-/*
-  int findFinishedWorker () {
-  //&WorkersAvailableQueue, entries
-  return 0;
-  }*/
-
-void mapTask (partition_bounds* bound) {
-  printf("Mapping\n");
-}
-void reduceTask (partition_bounds* bound) {
-  printf("Reducing\n");
 }
 
+void populateShm(int workerID, int taskID, int workerType) {
+  if (workerType == MAPPER) {
+    *(masterInfo.workerInfo[workerID].worker_type)=workerType;
+    *(masterInfo.workerInfo[workerID].task_index)=taskID;
+    *(masterInfo.workerInfo[workerID].worker_type)=workerType;
+  }
+  else if (workerType == REDUCER) {
+    
+  }
+}
+  
+  
