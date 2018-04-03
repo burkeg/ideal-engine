@@ -186,7 +186,7 @@ void delegateTasks() {
   //Map Phase
   printf("Begin map phase.\n");
   //While there are still remaining mappings
-  while (!isEmpty(mappersAvailable)) {
+  while (!isFull(mappersUnavailable)) {
 
     //While there are no avaliable workers, wait for a signal
     //that a worker has completed

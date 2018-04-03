@@ -165,10 +165,12 @@ int main (int argc, char *argv[]) {
     sem_post(sem_master_ready);
     sem_wait(sem_master_completed);
   }
-  
-  barrier(fork_sem,mutex,barrier_count,NUM_WORKERS-1);
+  printf("%d before\n",pid);
+  barrier(fork_sem,mutex,barrier_count,NUM_WORKERS);
+  printf("%d after\n",pid);
+  printf("Got past worker barrier %d.\n",pid);
   work(myID);
-
+  
   
 
   //Cleanup after finished

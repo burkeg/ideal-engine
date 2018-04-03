@@ -1,14 +1,17 @@
 #include "idealEngine.h"
 
 
-simpleArray * allocBuff(int size) {
+simpleArray * allocBuff(int capacity) {
   simpleArray *sArr = malloc(sizeof(simpleArray));
-  sArr->data=malloc(sizeof(int)*size);
-  sArr->size=size;
+  sArr->data=malloc(sizeof(int)*capacity);
+  sArr->size=capacity;
   sArr->head=0;
   return sArr;
 }
 
+int len(simpleArray * buffer) {
+  return buffer->head;
+}
 int peek(simpleArray * buffer) {
   if (buffer->head <= 0) {
     return -1; //silently continue;
@@ -32,6 +35,10 @@ void push(simpleArray * buffer,int value) {
   buffer->data[buffer->head]=value;
   (buffer->head)++;
 //  printf("[0]=%d\n",buffer->data[0]);
+}
+
+int isFull(simpleArray * buffer) {
+  return buffer->head==buffer->size;
 }
 
 int isEmpty(simpleArray * buffer) {
@@ -71,28 +78,29 @@ void demo() {
   printBuff(arr);
   printf("Peek into empty:%d\n",peek(arr));
   printf("Pop empty array:%d\n",pop(arr));
-  printf("isEmpty:%d\n",isEmpty(arr));
+  printf("isEmpty:%d, len:%d\n",isEmpty(arr),len(arr));
   for (i=4;i<15;i+=3) {
     push(arr,i);
     printf("push %d\n",i);
     printBuff(arr);
   }
 
+  printf("isFull:%d, len:%d\n",isFull(arr),len(arr));
   removeByValue(arr,13);  
   printBuff(arr);
-  printf("isEmpty:%d\n",isEmpty(arr));
+  printf("isEmpty:%d, len:%d\n",isEmpty(arr),len(arr));
   removeByValue(arr,4);  
   printBuff(arr);
-  printf("isEmpty:%d\n",isEmpty(arr));
+  printf("isEmpty:%d, len:%d\n",isEmpty(arr),len(arr));
   removeByValue(arr,7);  
   printBuff(arr);
-  printf("isEmpty:%d\n",isEmpty(arr));
+  printf("isEmpty:%d, len:%d\n",isEmpty(arr),len(arr));
   removeByValue(arr,10);  
   printBuff(arr);
-  printf("isEmpty:%d\n",isEmpty(arr));
+  printf("isEmpty:%d, len:%d\n",isEmpty(arr),len(arr));
   removeByValue(arr,13);  
   printBuff(arr);
-  printf("isEmpty:%d\n",isEmpty(arr));
+  printf("isEmpty:%d, len:%d\n",isEmpty(arr),len(arr));
   
   deallocBuff(arr);
 }
