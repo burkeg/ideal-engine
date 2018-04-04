@@ -17,7 +17,9 @@
 #include "semUtils.h"
 #include "userFuncts.h"
 #include "simpleArray.h"
-#define NUM_PARTITIONS_MAP 8
+
+
+#define NUM_PARTITIONS_MAP 6
 #define NUM_PARTITIONS_REDUCE 4
 #define NUM_WORKERS 4
 
