@@ -2,7 +2,7 @@
 
 void work(int workerID) {
   printf("Entering worker loop\n");
-  sleep(5);
+  sleep(1);
   worker_data workerInfo;
   key_t shmkey;
   int shmid;
@@ -44,15 +44,15 @@ void work(int workerID) {
   
   while (1) {
     //wait on start signal
-    printf(":sem_start wait\n");
+    printf(":sem_start wait %d\n",workerID);
     sem_wait(sem_start);
-    printf(":sem_start finished wait\n");
+    printf(":sem_start finished wait %d\n",workerID);
     
 
-    printf("I AM DOING WORK NOW\n");
+    printf("I AM DOING WORK NOW %d\n",workerID);
     
     //workerInfo.finished[workerID]=*(workerInfo.task_index);
-    workerInfo.finished[workerID]=1;
+    workerInfo.finished[workerID-1]=1;
     sem_post(workers_not_empty);
     //signal finished
   }

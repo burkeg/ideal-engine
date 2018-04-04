@@ -65,8 +65,9 @@ void removeByValue(simpleArray * buffer, int value) {
 }
 
 void printBuff(simpleArray * buffer) {
+  int i;
   printf("-------\n");
-  for (int i = 0; i < buffer->head;i++) {
+  for (i = 0; i < buffer->head;i++) {
     printf("%d,",buffer->data[i]);
   }
   printf("\n");

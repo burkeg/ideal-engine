@@ -132,7 +132,7 @@ int main (int argc, char *argv[]) {
 
   //creates n workers
   myID=NUM_WORKERS;
-  for (i = 0; i < NUM_WORKERS - 2; i++) {
+  for (i = 0; i < NUM_WORKERS - 1; i++) {
     pid = fork ();
     if (pid < 0) {
       /* check for error */
@@ -163,12 +163,12 @@ int main (int argc, char *argv[]) {
   if (pid != 0) {
     printf("All worker processes made.\n");
     sem_post(sem_master_ready);
-    sem_wait(sem_master_completed);
+    //    sem_wait(sem_master_completed);
   }
-  printf("%d before\n",pid);
+  printf("%d before\n",getpid());
   barrier(fork_sem,mutex,barrier_count,NUM_WORKERS);
-  printf("%d after\n",pid);
-  printf("Got past worker barrier %d.\n",pid);
+  printf("%d after\n",getpid());
+  printf("Got past worker barrier %d.\n",getpid());
   work(myID);
   
   
