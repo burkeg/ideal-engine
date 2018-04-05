@@ -115,7 +115,7 @@ void initMaster() {
 
   //Finished Flag
   shmkey=ftok(exe_name,idCount);
-  shmid = shmget (shmkey, sizeof (int)*NUM_WORKERS, 0644 | IPC_CREAT);
+  shmid = shmget (shmkey, sizeof (int)*(NUM_WORKERS+1), 0644 | IPC_CREAT);
   if (shmid < 0){ //shared memory error check
     perror ("shmget\n");
     exit (1);
@@ -127,6 +127,8 @@ void initMaster() {
     masterInfo.workerInfo[i].finished = (int *) shmat (shmid, NULL, 0);
     masterInfo.workerInfo[0].finished[i]=0;
   }
+  //the final finished flag indicates when the current phase is complete.
+  masterInfo.workerInfo[0].finished[i]=0;
   printf("Shared memory allocated for finished flag in master (ID,shmid,shmkey:%d,%d,%d\n",idCount,shmid,shmkey);
   
   masterInfo.finished = (int *) shmat (shmid, NULL, 0);
@@ -243,9 +245,11 @@ void delegateTasks() {
     //Signal that worker to wake up
     sem_post(sem_worker_can_start[freeWorker]);
   }
-
+  
   printf("ALL MAPPERS SCHEDULED\n");
   //All mappings have been scheduled, wait for leftovers to finish
+  masterInfo.workerInfo[0].finished[NUM_WORKERS]=1;
+  
   while (!isEmpty(mappersUnavailable)) {
     //implement this
     break;

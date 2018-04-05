@@ -59,6 +59,8 @@ void work(int workerID) {
     //wait on start signal
     //printf(":sem_start wait %d\n",workerID);
     sem_wait(sem_start);
+    if (workerInfo.finished[workerID]==1)
+      break;
     //printf(":sem_start finished wait %d\n",workerID);
     
 
@@ -72,6 +74,7 @@ void work(int workerID) {
     //signal finished
   }
 
+  printf("Map phase complete: worker %d\n",workerID);
   //detach from worker shared memory
   shmdt(raw_data);
 }
