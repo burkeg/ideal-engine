@@ -190,7 +190,7 @@ void delegateTasks() {
   printf("Begin map phase.\n");
   //While there are still remaining mappings
   while (!isFull(mappersUnavailable)) {
-    printf("Master (avail %d) (unavail %d)\n",len(mappersAvailable),len(mappersUnavailable));
+    //printf("Master (avail %d) (unavail %d)\n",len(mappersAvailable),len(mappersUnavailable));
     //While there are no avaliable workers, wait for a signal
     //that a worker has completed
     //printf("### mappers Available\n");
@@ -214,17 +214,24 @@ void delegateTasks() {
       }
       masterInfo.workerInfo[0].finished[i]=0;
       //mapper now unavailable
-      printf("----Mapper %d done.\n",*(masterInfo.workerInfo[i].task_index));
-      push(mappersUnavailable,*(masterInfo.workerInfo[i].task_index));
-
+      //printf("----Mapper %d done.\n",*(masterInfo.workerInfo[i].task_index));
+      //push(mappersUnavailable,*(masterInfo.workerInfo[i].task_index));
+      //printf("mappersUnavailable ");
+      //printBuff(mappersUnavailable);
       //worker no longer available
       removeByValue(workersAvailable,*(masterInfo.workerInfo[i].task_index));
+      //      printf("workersAvailable ");
+      //      printBuff(workersAvailable);
       
       //worker now available
       push(workersAvailable,i);
+      //      printf("workersAvailable ");
+      //      printBuff(workersAvailable);
 
       //worker no longer unavailable
       removeByValue(workersUnavailable,i);
+      //      printf("workersUnavailable ");
+      //      printBuff(workersUnavailable);
       
       //printf("### Worker %d now free.\n",i);
     }
@@ -232,7 +239,11 @@ void delegateTasks() {
 
     //Choose a worker to give a job
     freeWorker=pop(workersAvailable);
+    //    printf("workersAvailable ");
+    //    printBuff(workersAvailable);
     deployedMap=pop(mappersAvailable);
+    //    printf("mappersAvailable ");
+    //    printBuff(mappersAvailable);
     
     //printf("### Worker %d selected to do mapping %d.\n",freeWorker,deployedMap);
     //Populate the shared memory of that worker with the
@@ -241,20 +252,35 @@ void delegateTasks() {
     
     //Move the mapper from the Available to Unavailable queue
     push(mappersUnavailable,deployedMap);
-    printf("------Scheduling mapper %d\n",deployedMap);
+    //    printf("mappersUnavailable ");
+    //    printBuff(mappersUnavailable);
+    //printf("------Scheduling mapper %d\n",deployedMap);
     //Signal that worker to wake up
     sem_post(sem_worker_can_start[freeWorker]);
   }
+  int flag;
   
+  while(1) {
+    flag=0;
+    for (i=0;i<NUM_WORKERS;i++){
+      if (masterInfo.workerInfo[0].finished[i] == 0) {
+	flag=1;
+      }
+    }
+    if (flag==0)
+      break;
+  }
   printf("ALL MAPPERS SCHEDULED\n");
   //All mappings have been scheduled, wait for leftovers to finish
   masterInfo.workerInfo[0].finished[NUM_WORKERS]=1;
-  
+  for (i=0;i<NUM_WORKERS;i++) {
+    sem_post(sem_worker_can_start[i]);    
+  }
+  printf("ALL MAPPERS DONE\n");
   while (!isEmpty(mappersUnavailable)) {
     //implement this
     break;
   }
-
 
   
   deallocBuff(workersAvailable);
@@ -266,6 +292,8 @@ void delegateTasks() {
   deallocBuff(reducersAvailable);
   deallocBuff(reducersUnavailable);
   deallocBuff(reducersComplete);
+  
+  //  shmctl (shmid, IPC_RMID, 0);
   
   cleanup_sem(workers_not_empty,workers_not_empty_str);
   

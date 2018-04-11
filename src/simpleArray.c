@@ -1,5 +1,5 @@
 #include "idealEngine.h"
-
+#include <string.h>
 
 simpleArray * allocBuff(int capacity) {
   simpleArray *sArr = malloc(sizeof(simpleArray));
@@ -66,11 +66,13 @@ void removeByValue(simpleArray * buffer, int value) {
 
 void printBuff(simpleArray * buffer) {
   int i;
-  printf("-------\n");
+  char strBuff[256];
+  sprintf(strBuff,"{");
   for (i = 0; i < buffer->head;i++) {
-    printf("%d,",buffer->data[i]);
+    sprintf(strBuff+strlen(strBuff),"%d,",buffer->data[i]);
   }
-  printf("\n");
+  sprintf(strBuff+strlen(strBuff),"}\n");
+  printf("%s",strBuff);
 }
 
 void demo() {

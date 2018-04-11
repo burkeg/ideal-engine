@@ -16,7 +16,7 @@ $(ODIR)/%.o: %.c $(DEPS)
 	$(CC) -c -o $@ $< $(CFLAGS)
 
 idealEngine: $(OBJ)
-	gcc -o $@ $^ $(CFLAGS) -lpthread -lrt
+	gcc -o $@ $^ $(CFLAGS) -lpthread -lrt -lm
 
 .PHONY: clean
 clean:
