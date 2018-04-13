@@ -1,5 +1,6 @@
 #include "worker.h"
 #include <math.h>
+#include "shmWrapper.h"
 worker_data workerInfo;
 
 void work(int workerID) {
@@ -16,16 +17,8 @@ void work(int workerID) {
   int i,sum;
   char filecontent[30];
   
-  //map worker data and string data to shared buffer
-  shmkey=ftok(exe_name,workerID);
-  shmid = shmget (shmkey, sizeof (int)*WORKER_SHM_SIZE, 0644);
-  if (shmid < 0){ //shared memory error check
-    perror ("shmget\n");
-  }
 
-  printf("Shared memory opened in worker (ID,shmid,shmkey:%d,%d,%d\n",workerID,shmid,shmkey);
-
-  raw_data= (unsigned char *) shmat (shmid, NULL, 0);
+  raw_data= (unsigned char *) shmat (attachShm(workerID), NULL, 0);
   //visualize mapped memory
   //for (int i = 0; i < 4; i++) {
   // printf("%d,",((int*) raw_data)[i]);
@@ -39,13 +32,7 @@ void work(int workerID) {
 
 
   //map worker finished status bits
-  shmkey=ftok(exe_name,NUM_PARTITIONS_MAP+NUM_PARTITIONS_REDUCE+NUM_WORKERS+2);
-  shmid = shmget (shmkey, sizeof (int)*NUM_WORKERS, 0644);
-  if (shmid < 0){ //shared memory error check
-    perror ("shmget\n");
-  }
-
-  raw_finished= (unsigned char *) shmat (shmid, NULL, 0);
+  raw_finished= (unsigned char *) shmat (attachShm(NUM_PARTITIONS_MAP+NUM_PARTITIONS_REDUCE+NUM_WORKERS+2), NULL, 0);
   workerInfo.finished=(int*) raw_finished;
 
   //open semaphores
@@ -77,7 +64,7 @@ void work(int workerID) {
     //fclose(fp);
     //*
     sum=0;
-    for (i=0; i < 1000; i++) {
+    for (i=0; i < 1000000; i++) {
       sum += sin((double)i);
     }//*/
     /*
@@ -101,7 +88,9 @@ void work(int workerID) {
 
   printf("Map phase complete: worker %d\n",workerID);
   //detach from worker shared memory
-  shmdt(raw_data);
+  detachShm(workerID,raw_data);
+  detachShm(NUM_PARTITIONS_MAP+NUM_PARTITIONS_REDUCE+NUM_WORKERS+2,raw_finished);
+  printf("Worker %d detached from Shm\n",workerID);
 }
 
 void printProgress() {

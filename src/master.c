@@ -1,4 +1,5 @@
 #include "idealEngine.h"
+#include "shmWrapper.h"
 
 master_data masterInfo;
 
@@ -8,8 +9,6 @@ void initMaster() {
   char nameBuffer[20];
   long int **bound;
   //  char **filenames;
-  key_t shmkey;
-  int shmid;
   int idCount=1;
   printf("entered initMaster\n");
   bound = find_partition_bounds();
@@ -29,19 +28,13 @@ void initMaster() {
      printf("%d",masterInfo.mapInfo[i].mapBound.start);
      printf(",%d\n",masterInfo.mapInfo[i].mapBound.end);
      }*/
-
-  
+  int tmp;
+  tmp=idCount;
   //Worker data
   for (i=0;i<NUM_WORKERS;i++) {
-    shmkey=ftok(exe_name,idCount);
-    shmid = shmget (shmkey, sizeof (int)*4, 0644 | IPC_CREAT);
-    if (shmid < 0){ //shared memory error check
-      perror ("shmget\n");
-      exit (1);
-    }
-    printf("Shared memory allocated for worker in master (ID,shmid,shmkey:%d,%d,%d\n",idCount,shmid,shmkey);
-    //attach to shared memory
-    masterInfo.workerInfo[i].mmapping = (int *) shmat (shmid, NULL, 0);
+    createShm(sizeof (int)*4,idCount);
+
+    masterInfo.workerInfo[i].mmapping = (int *) shmat (attachShm(idCount), NULL, 0);
     //populate the master data structure with useful worker process
     //information
     masterInfo.workerInfo[i].worker_type=&(masterInfo.workerInfo[i].mmapping[0]);
@@ -51,21 +44,18 @@ void initMaster() {
     idCount++;
   }
   
+  printf("Worker Data: [%d,%d)\n",tmp, idCount);
+  
 
 
+  tmp=idCount;
 
 
   //Mapper partition data
   for (i=0;i<NUM_PARTITIONS_MAP;i++) {
+    createShm(sizeof (long int)*2*(NUM_PARTITIONS_REDUCE+1),idCount);
     
-    shmkey=ftok(exe_name,idCount);
-    shmid = shmget (shmkey, sizeof (long int)*2*(NUM_PARTITIONS_REDUCE+1), 0644 | IPC_CREAT);
-    if (shmid < 0){ //shared memory error check
-      perror ("shmget\n");
-      exit (1);
-    }
-    printf("Shared memory allocated for mapper in master (ID,shmid,shmkey:%d,%d,%d\n",idCount,shmid,shmkey);
-    masterInfo.mapInfo[i].shmBuffer = (long int *) shmat (shmid, NULL, 0);
+    masterInfo.mapInfo[i].shmBuffer = (long int *) shmat (attachShm(idCount), NULL, 0);
     //give each mapper its start and end splice bounds from the
     //original input dataset
     masterInfo.mapInfo[i].shmBuffer[0]=masterInfo.mapInfo[i].mapBound.start;
@@ -73,67 +63,52 @@ void initMaster() {
     idCount++;
   }
 
+  printf("Mapper Data: [%d,%d)\n",tmp, idCount);
 
 
+  tmp=idCount;
   
   //Reducer Partition data
   for (i=0;i<NUM_PARTITIONS_REDUCE;i++) {
+    createShm(sizeof (long int)*2*(NUM_PARTITIONS_MAP),idCount);
     
-    shmkey=ftok(exe_name,idCount);
-    shmid = shmget (shmkey, sizeof (long int)*2*(NUM_PARTITIONS_MAP), 0644 | IPC_CREAT);
-    if (shmid < 0){ //shared memory error check
-      perror ("shmget\n");
-      exit (1);
-    }
-    printf("Shared memory allocated for reducer in master (ID,shmid,shmkey:%d,%d,%d\n",idCount,shmid,shmkey);
-    
-    masterInfo.reduceInfo[i].shmBuffer = (long int *) shmat (shmid, NULL, 0);
+    masterInfo.reduceInfo[i].shmBuffer = (long int *) shmat (attachShm(idCount), NULL, 0);
     //Can't populate, partitions must be provided by the mapper
     
     idCount++;
   }
 
+  printf("Reducer Data: [%d,%d)\n",tmp, idCount);
 
 
+  tmp=idCount;
   //Intermediate Filenames
-  shmkey=ftok(exe_name,idCount);
-  shmid = shmget (shmkey, sizeof (char)*255*NUM_PARTITIONS_MAP, 0644 | IPC_CREAT);
-  if (shmid < 0){ //shared memory error check
-    perror ("shmget\n");
-    exit (1);
-  }
+  createShm(sizeof (char)*255*NUM_PARTITIONS_MAP, idCount);
+  
   for (i=0;i<NUM_WORKERS;i++) {
     
-    printf("Shared memory allocated filenames in master (ID,shmid,shmkey:%d,%d,%d\n",idCount,shmid,shmkey);
     
-    masterInfo.workerInfo[i].mmapping_filenames = (char *) shmat (shmid, NULL, 0);
+    masterInfo.workerInfo[i].mmapping_filenames = (char *) shmat (attachShm(idCount), NULL, 0);
   }
   idCount++;
 
+  printf("Intermediate Filename Data: [%d,%d)\n",tmp, idCount);
 
-
-
+  tmp=idCount;
   //Finished Flag
-  shmkey=ftok(exe_name,idCount);
-  shmid = shmget (shmkey, sizeof (int)*(NUM_WORKERS+1), 0644 | IPC_CREAT);
-  if (shmid < 0){ //shared memory error check
-    perror ("shmget\n");
-    exit (1);
-  }
+  createShm(sizeof (int)*(NUM_WORKERS+1), idCount);
   for (i=0;i<NUM_WORKERS;i++) {
     
-    printf("Shared memory allocated for finished flag in workers (ID,shmid,shmkey:%d,%d,%d\n",idCount,shmid,shmkey);
-    
-    masterInfo.workerInfo[i].finished = (int *) shmat (shmid, NULL, 0);
+    masterInfo.workerInfo[i].finished = (int *) shmat (attachShm(idCount), NULL, 0);
     masterInfo.workerInfo[0].finished[i]=0;
   }
   //the final finished flag indicates when the current phase is complete.
   masterInfo.workerInfo[0].finished[i]=0;
-  printf("Shared memory allocated for finished flag in master (ID,shmid,shmkey:%d,%d,%d\n",idCount,shmid,shmkey);
   
-  masterInfo.finished = (int *) shmat (shmid, NULL, 0);
+  masterInfo.finished = (int *) shmat (attachShm(idCount), NULL, 0);
   idCount++;
 
+  printf("Finished flag: [%d,%d)\n",tmp, idCount);
 
 
 
@@ -144,6 +119,8 @@ void initMaster() {
 
 void delegateTasks() {
   int i;
+  int idCount;
+  int tmp;
   sem_t *workers_not_empty;
   sem_t *sem_worker_can_start[NUM_WORKERS];
   char *workers_not_empty_str = "wksActive";
@@ -185,7 +162,7 @@ void delegateTasks() {
   //Magic Happens here
   //
   //
-  sleep(5);//wait for workers to get ready
+  sleep(1);//wait for workers to get ready
   //Map Phase
   printf("Begin map phase.\n");
   //While there are still remaining mappings
@@ -304,6 +281,65 @@ void delegateTasks() {
     cleanup_sem(sem_worker_can_start[i],worker_tmp_name);
     free(worker_tmp_name);
   }
+
+  //Detach from all shm
+  idCount=1;
+  tmp=idCount;
+  
+  for (i=0;i<NUM_WORKERS;i++) {
+    detachShm(idCount,masterInfo.workerInfo[i].mmapping);
+    idCount++;
+  }
+  
+  printf("Worker Data Detached: [%d,%d)\n",tmp, idCount);
+
+  tmp=idCount;
+
+  //Mapper partition data
+  for (i=0;i<NUM_PARTITIONS_MAP;i++) {
+    detachShm(idCount,masterInfo.mapInfo[i].shmBuffer);
+    idCount++;
+  }
+
+  printf("Mapper Data Detached: [%d,%d)\n",tmp, idCount);
+
+
+  tmp=idCount;
+  
+  //Reducer Partition data
+  for (i=0;i<NUM_PARTITIONS_REDUCE;i++) {
+    detachShm(idCount,masterInfo.reduceInfo[i].shmBuffer);
+    idCount++;
+  }
+
+  printf("Reducer Data Detached: [%d,%d)\n",tmp, idCount);
+
+
+  tmp=idCount;
+  //Intermediate Filenames
+  
+  for (i=0;i<NUM_WORKERS;i++) {
+    detachShm(idCount,masterInfo.workerInfo[i].mmapping_filenames);
+  }
+  idCount++;
+
+  printf("Intermediate Filename Data Detached: [%d,%d)\n",tmp, idCount);
+
+  tmp=idCount;
+  //Finished Flag
+ 
+  for (i=0;i<NUM_WORKERS;i++) {
+    detachShm(idCount,masterInfo.workerInfo[i].finished);
+  }
+  detachShm(idCount,masterInfo.finished);
+  idCount++;
+
+  printf("Finished flag Detached: [%d,%d)\n",tmp, idCount);
+
+  for (i=1; i<=MAX_SHM_SEGMENTS; i++) {
+    deleteShm(i);
+  }
+  printf("Finished removing all shared memory segments\n");
 }
 
 void populateShm(int workerID, int taskID, int workerType) {

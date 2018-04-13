@@ -38,6 +38,12 @@ cr:
 	$(MAKE) 	
 	$(MAKE) run
 
+.PHONY: c
 c:
 	$(MAKE) clean	
 	$(MAKE) 
+
+.PHONY: veryclean
+veryclean:
+	bash cleanUpShm.sh
+	$(MAKE) clean

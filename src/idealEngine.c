@@ -41,31 +41,18 @@ int main (int argc, char *argv[]) {
   barrier_count = (int *) shmat (shmid, NULL, 0);   /* attach p to shared memory */
   *barrier_count = 0;
   //  printf ("barrier_count=%d is allocated in shared memory.\n\n", *barrier_count);
-  /*
+  
   initShmWrapper(exe_name);
-  int theDamnID;
-  theDamnID = 7;
-  createShm(12,theDamnID);*/
+  
   /* initialize semaphores for shared processes */
-   fork_sem = setup_sem(0, fork_str);
+  //*
+  fork_sem = setup_sem(0, fork_str);
   mutex = setup_sem(1, lock_str);
   sem_master_ready = setup_sem(0, master_str);
   sem_master_completed = setup_sem(0, completed_str);
-  
-  pid = fork();/*
-  int * shmdata;
-  // printf("pid: %d",pid);
-  if (pid != 0) {
-    shmdata = (int *)attachShm(theDamnID);
-    printf("par shmdata:%08x\n",shmdata);
-    printf("par shmdata[0]:%08x\n",shmdata[0]);
-    shmdata[0]=1;
-    printf("Parent made it\n");
-  } else {
-    //printf("Child made it\n");
-  }*/
-  //shmdata=getPtrShm(theDamnID);
-  //printf("TEST: [%d]\n",shmdata[0]);
+  //*/
+  pid = fork();
+
   gettimeofday(&start, NULL);
   if (pid!=0) {
     //Master
@@ -202,6 +189,10 @@ int main (int argc, char *argv[]) {
     cleanup_sem(sem_master_completed,completed_str);
     /* unlink prevents the semaphore existing forever */
     /* if a crash occurs during the execution         */
+
+    //removes the shared memory page that's used to implement
+    //the shared memory wrapper
+    closeShmWrapper();
   }
   return(0);
 }
