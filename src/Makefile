@@ -8,7 +8,7 @@ LDIR =../lib
 _DEPS = idealEngine.h
 DEPS = $(patsubst %,$(IDIR)/%,$(_DEPS))
 
-_OBJ = idealEngine.o master.o worker.o semUtils.o userFuncts.o simpleArray.o 
+_OBJ = idealEngine.o master.o worker.o semUtils.o userFuncts.o simpleArray.o shmWrapper.o
 OBJ = $(patsubst %,$(ODIR)/%,$(_OBJ))
 
 

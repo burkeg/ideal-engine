@@ -71,15 +71,15 @@ void work(int workerID) {
     //char fname[15];
     //sprintf(fname,"mapOut%d.txt",*(workerInfo.task_index));
     //fp = fopen(fname,"w");
-    sprintf(filecontent,"%d\n\0",fib(NUM_PARTITIONS_MAP-1-*(workerInfo.task_index)));
+    //sprintf(filecontent,"%d\n\0",fib(NUM_PARTITIONS_MAP-1-*(workerInfo.task_index)));
     //fwrite(filecontent,1,sizeof(filecontent),fp);
-    printf(filecontent);
+    //printf(filecontent);
     //fclose(fp);
-    /*
+    //*
     sum=0;
-    for (i=0; i < 100000; i++) {
+    for (i=0; i < 1000; i++) {
       sum += sin((double)i);
-    }*/
+    }//*/
     /*
     while (1) {
       printf("fail %d\n",workerID);
