@@ -122,13 +122,17 @@ void delegateTasks() {
   int idCount;
   int tmp;
   sem_t *workers_not_empty;
+  sem_t *sem_start_reduce;
   sem_t *sem_worker_can_start[NUM_WORKERS];
   char *workers_not_empty_str = "wksActive";
+  char *sem_start_reduce_str = "wksReduce";
   char *worker_tmp_name;
   int freeWorker;
   int deployedMap;
+  int deployedReduce;
   
   workers_not_empty = setup_sem(0,workers_not_empty_str);
+  sem_start_reduce = setup_sem(0,sem_start_reduce_str);
   
   for (i=0;i<NUM_WORKERS;i++) {
     worker_tmp_name=malloc(sizeof(char)*255);
@@ -254,11 +258,104 @@ void delegateTasks() {
     sem_post(sem_worker_can_start[i]);    
   }
   printf("ALL MAPPERS DONE\n");
-  while (!isEmpty(mappersUnavailable)) {
-    //implement this
-    break;
+
+  //REDUCE
+  
+  //Repopulate buffer
+  for (i=0;i<NUM_WORKERS;i++) {
+    push(workersAvailable,i);
+    masterInfo.workerInfo[i].finished[NUM_WORKERS] = 0;
+  }
+  for (i=0;i<NUM_WORKERS;i++) {
+    printf("signalling sem_start_reduce\n");
+    sem_post(sem_start_reduce);    
+  }
+  
+  printBuff(workersAvailable);
+  printBuff(workersUnavailable);
+  printBuff(reducersAvailable);
+  printBuff(reducersUnavailable);
+  
+  while (!isFull(reducersUnavailable)) {
+    //While there are no avaliable workers, wait for a signal
+    //that a worker has completed
+    printf("### mappers Available\n");
+    if (isEmpty(workersAvailable)) {
+      printf("### No workers available\n");
+      //find a worker that finished and move it to the
+      //Available queue, also move the corresponding map
+      //to the Complete queue
+      sem_wait(workers_not_empty);
+      
+      for (i=0;i<NUM_WORKERS;i++) {
+	if (masterInfo.finished[i] != 0) {
+	  break;
+	}
+      }
+      if (i==NUM_WORKERS) {
+	printf("If this prints, I'm a bad programmer.\n");
+      }
+      masterInfo.workerInfo[0].finished[i]=0;
+      //mapper now unavailable
+      
+      printf("reducersUnavailable ");
+      printBuff(reducersUnavailable);
+      //worker no longer available
+      removeByValue(workersAvailable,*(masterInfo.workerInfo[i].task_index));
+      printf("workersAvailable ");
+      printBuff(workersAvailable);
+      
+      //worker now available
+      push(workersAvailable,i);
+      printf("workersAvailable ");
+      printBuff(workersAvailable);
+
+      //worker no longer unavailable
+      removeByValue(workersUnavailable,i);
+      printf("workersUnavailable ");
+      printBuff(workersUnavailable);
+    }
+    //There is at least 1 worker that is free to do a map
+
+    //Choose a worker to give a job
+    freeWorker=pop(workersAvailable);
+    printf("workersAvailable ");
+    printBuff(workersAvailable);
+    deployedReduce=pop(reducersAvailable);
+    printf("reducersAvailable ");
+    printBuff(reducersAvailable);
+    
+    printf("### Worker %d selected to do reducing %d.\n",freeWorker,deployedReduce);
+    //Populate the shared memory of that worker with the
+    //up-to-date copy from master
+    populateShm(freeWorker,deployedReduce,REDUCER);
+    
+    //Move the mapper from the Available to Unavailable queue
+    push(reducersUnavailable,deployedReduce);
+    //Signal that worker to wake up
+    sem_post(sem_worker_can_start[freeWorker]);
   }
 
+  
+ while(1) {
+    flag=0;
+    for (i=0;i<NUM_WORKERS;i++){
+      if (masterInfo.workerInfo[0].finished[i] == 0) {
+	flag=1;
+      }
+    }
+    if (flag==0)
+      break;
+  }
+  printf("ALL REDUCERS SCHEDULED\n");
+  //All mappings have been scheduled, wait for leftovers to finish
+  masterInfo.workerInfo[0].finished[NUM_WORKERS]=1;
+  for (i=0;i<NUM_WORKERS;i++) {
+    sem_post(sem_worker_can_start[i]);    
+  }
+  printf("ALL REDUCERS DONE\n");
+
+  sleep(2);
   
   deallocBuff(workersAvailable);
   deallocBuff(workersUnavailable);
@@ -346,9 +443,10 @@ void populateShm(int workerID, int taskID, int workerType) {
   if (workerType == MAPPER) {
     *(masterInfo.workerInfo[workerID].worker_type)=workerType;
     *(masterInfo.workerInfo[workerID].task_index)=taskID;
-    *(masterInfo.workerInfo[workerID].worker_type)=workerType;
   }
   else if (workerType == REDUCER) {
+    *(masterInfo.workerInfo[workerID].worker_type)=workerType;
+    *(masterInfo.workerInfo[workerID].task_index)=taskID;
     
   }
 }

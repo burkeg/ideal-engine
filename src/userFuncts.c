@@ -1,10 +1,20 @@
+#include <math.h>
 #include "idealEngine.h"
 
 void map () {
-
+  int sum,i;
+  sum=0;
+  for (i=0; i < 10000; i++) {
+    sum += sin((double)i);
+  }
 }
 
 void reduce () {
+  int sum,i;
+  sum=0;
+  for (i=0; i < 10000; i++) {
+    sum += sin((double)i);
+  }
 
 }
 

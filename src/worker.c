@@ -1,6 +1,7 @@
 #include "worker.h"
 #include <math.h>
 #include "shmWrapper.h"
+#include "userFuncts.h"
 worker_data workerInfo;
 
 void work(int workerID) {
@@ -11,7 +12,9 @@ void work(int workerID) {
   unsigned char *raw_data;
   unsigned char *raw_finished;
   char *workers_not_empty_str = "wksActive";
+  char *sem_start_reduce_str = "wksReduce";
   sem_t *workers_not_empty;
+  sem_t *sem_start_reduce;
   sem_t *sem_start;
   char *worker_tmp_name;
   int i,sum;
@@ -37,6 +40,7 @@ void work(int workerID) {
 
   //open semaphores
   workers_not_empty=open_existing_sem(workers_not_empty_str);
+  sem_start_reduce=open_existing_sem(sem_start_reduce_str);
   
   worker_tmp_name=malloc(sizeof(char)*255);
   sprintf(worker_tmp_name,"worker%03d",workerID-1);
@@ -45,39 +49,13 @@ void work(int workerID) {
 
   srand(0);
   while (1) {
-    //wait on start signal
-    //printf(":sem_start wait %d\n",workerID);
     sem_wait(sem_start);
     if (workerInfo.finished[NUM_WORKERS]==1)
       break;
-    //printf(":sem_start finished wait %d\n",workerID);
 
     //critical section
+    map();
 
-    //FILE *fp;
-    //char fname[15];
-    //sprintf(fname,"mapOut%d.txt",*(workerInfo.task_index));
-    //fp = fopen(fname,"w");
-    //sprintf(filecontent,"%d\n\0",fib(NUM_PARTITIONS_MAP-1-*(workerInfo.task_index)));
-    //fwrite(filecontent,1,sizeof(filecontent),fp);
-    //printf(filecontent);
-    //fclose(fp);
-    //*
-    sum=0;
-    for (i=0; i < 1000000; i++) {
-      sum += sin((double)i);
-    }//*/
-    /*
-    while (1) {
-      printf("fail %d\n",workerID);
-      if (rand() % 10 == 0){
-	break;
-      }
-    }*/
-    //printf("                       %d\n",sum);
-    //printf("--I AM DOING WORK NOW %d\n",workerID);
-    
-    //workerInfo.finished[workerID-1]=*(workerInfo.task_index);
     workerInfo.finished[workerID-1]=1;
     
     //printf(":%s posted %d\n",workers_not_empty_str,workerID);
@@ -86,7 +64,29 @@ void work(int workerID) {
     //signal finished
   }
 
-  printf("Map phase complete: worker %d\n",workerID);
+  printf("Stuck before sem_start_reduce %d\n",workerID);
+  sem_wait(sem_start_reduce);
+  while (1) {
+    //wait on start signal
+    //printf(":sem_start wait %d\n",workerID);
+    sem_wait(sem_start);
+    printf("reducing %d\n",workerInfo.finished[NUM_WORKERS]);
+    if (workerInfo.finished[NUM_WORKERS]==1)
+      break;
+
+    //critical section
+    reduce();
+    
+    workerInfo.finished[workerID-1]=1;
+    
+    printProgress();
+    sem_post(workers_not_empty);
+    //signal finished
+  }
+
+  
+
+  printf("Reduce phase complete: worker %d\n",workerID);
   //detach from worker shared memory
   detachShm(workerID,raw_data);
   detachShm(NUM_PARTITIONS_MAP+NUM_PARTITIONS_REDUCE+NUM_WORKERS+2,raw_finished);

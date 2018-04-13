@@ -19,9 +19,9 @@
 #include "simpleArray.h"
 
 
-#define NUM_PARTITIONS_MAP 800
-#define NUM_PARTITIONS_REDUCE 4
-#define NUM_WORKERS 128
+#define NUM_PARTITIONS_MAP 40
+#define NUM_PARTITIONS_REDUCE 16
+#define NUM_WORKERS 8
 
 //Worker status
 #define IDLE 0
