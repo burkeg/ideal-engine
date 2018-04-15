@@ -4,7 +4,8 @@
 
 void map ();
 void reduce ();
-long int ** find_partition_bounds();
+long int ** find_partition_bounds(char *inputFilename);
+void inputReader(char *);
 char ** specify_intermediate_filenames();
 
 #endif

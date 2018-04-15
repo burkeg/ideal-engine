@@ -45,5 +45,6 @@ c:
 
 .PHONY: veryclean
 veryclean:
-	bash cleanUpShm.sh
+	bash cleanUpShm.sh;\
+	pkill idealEngine;\
 	$(MAKE) clean

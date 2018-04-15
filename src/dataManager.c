@@ -1,5 +1,6 @@
 #include "idealEngine.h"
-#include <bsd/string.h>
+#include <string.h>
+//#include <bsd/string.h>
 //#include "dataManager.c"
 
 kv_pair **key_values;
@@ -13,7 +14,7 @@ void initDataManager() {
 
 void emit(kv_pair * kv) {
   key_values[idx]->key=kv->key;
-  strlcpy(kv->value,key_values[idx]->value,MAX_VALUE_LENGTH);
+  strcpy(kv->value,key_values[idx]->value);
   idx++;
 }
 

@@ -11,7 +11,7 @@ void initMaster() {
   //  char **filenames;
   int idCount=1;
   printf("entered initMaster\n");
-  bound = find_partition_bounds();
+  bound = find_partition_bounds("input.dat");
   //get user allocated partition bounds
   printf("found partition bounds\n");
 

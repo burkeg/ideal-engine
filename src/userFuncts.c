@@ -36,7 +36,7 @@ void reduce () {
 
   http://www.cplusplus.com/reference/cstdio/ftell/
 */
-long int ** find_partition_bounds() {
+long int ** find_partition_bounds(char *inputFilename) {
   long int ** bounds;
   int i;
   bounds = malloc(sizeof(long int) * NUM_PARTITIONS_MAP);
@@ -50,10 +50,14 @@ long int ** find_partition_bounds() {
 
 void inputReader(char *inputFilename) {
   FILE * fp;
+  long int size;
+  
   if ((fp=fopen(inputFilename,"r"))==NULL) {
     printf("failed to read input file\n");
     return;
   }
+  fseek(fp, 0L, SEEK_END);
+  size = ftell(fp);
   
   
 }
