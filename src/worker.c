@@ -50,8 +50,11 @@ void work(int workerID) {
   srand(0);
   while (1) {
     sem_wait(sem_start);
-    if (workerInfo.finished[NUM_WORKERS]==1)
+    printf("Mapper %d woke up\n",workerID);
+    if (workerInfo.finished[NUM_WORKERS]==1) {
+      //printf("Mapper %d broke out\n",workerID);
       break;
+    }
 
     //critical section
     map();
@@ -59,7 +62,7 @@ void work(int workerID) {
     workerInfo.finished[workerID-1]=1;
     
     //printf(":%s posted %d\n",workers_not_empty_str,workerID);
-    printProgress();
+    printProgress(workerID);
     sem_post(workers_not_empty);
     //signal finished
   }
@@ -70,16 +73,18 @@ void work(int workerID) {
     //wait on start signal
     //printf(":sem_start wait %d\n",workerID);
     sem_wait(sem_start);
-    printf("reducing %d\n",workerInfo.finished[NUM_WORKERS]);
-    if (workerInfo.finished[NUM_WORKERS]==1)
+    printf("--Reducer %d woke up\n",workerID);
+    if (workerInfo.finished[NUM_WORKERS]==1) {
+      printf("Reducer %d broke out\n",workerID);
       break;
+    }
 
     //critical section
     reduce();
     
     workerInfo.finished[workerID-1]=1;
     
-    printProgress();
+    printProgress(workerID);
     sem_post(workers_not_empty);
     //signal finished
   }
@@ -93,15 +98,13 @@ void work(int workerID) {
   printf("Worker %d detached from Shm\n",workerID);
 }
 
-void printProgress() {
-  char str[NUM_WORKERS+2];
+void printProgress(int ID) {
+  char str[NUM_WORKERS-1];
   int i;
   for (i = 0; i < NUM_WORKERS; i++) {
-    str[NUM_WORKERS-1-i]=workerInfo.finished[i]? '1' : '0';
+    str[NUM_WORKERS-1-i]=workerInfo.finished[i]? '1'+i : ' ';
   }
-  str[NUM_WORKERS]='\n';
-  str[NUM_WORKERS+1]='\0';
-  printf("worker status: %s",str);
+  printf("worker %d status: [%s] %d\n",ID,str,workerInfo.finished[NUM_WORKERS]);
 }
 
 int fib(int n){

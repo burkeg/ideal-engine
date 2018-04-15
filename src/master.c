@@ -130,6 +130,7 @@ void delegateTasks() {
   int freeWorker;
   int deployedMap;
   int deployedReduce;
+  int sem_value;
   
   workers_not_empty = setup_sem(0,workers_not_empty_str);
   sem_start_reduce = setup_sem(0,sem_start_reduce_str);
@@ -258,19 +259,28 @@ void delegateTasks() {
     sem_post(sem_worker_can_start[i]);    
   }
   printf("ALL MAPPERS DONE\n");
-
   //REDUCE
-  
+  printf("start 2 second wait,\n");
+  sleep(2);
+  printf("end 2 second wait,\n");
   //Repopulate buffer
   for (i=0;i<NUM_WORKERS;i++) {
     push(workersAvailable,i);
-    masterInfo.workerInfo[i].finished[NUM_WORKERS] = 0;
+    masterInfo.workerInfo[i].finished[i] = 0;
   }
+  masterInfo.workerInfo[0].finished[NUM_WORKERS] = 0;
   for (i=0;i<NUM_WORKERS;i++) {
     printf("signalling sem_start_reduce\n");
     sem_post(sem_start_reduce);    
   }
-  
+
+  sem_getvalue(workers_not_empty,&sem_value);
+  printf("sem_value: %d\n",sem_value);
+  for (i=0; i<NUM_WORKERS;i++) {
+    sem_wait(workers_not_empty);
+  }
+  sem_getvalue(workers_not_empty,&sem_value);
+  printf("sem_value: %d\n",sem_value);
   printBuff(workersAvailable);
   printBuff(workersUnavailable);
   printBuff(reducersAvailable);
@@ -286,7 +296,7 @@ void delegateTasks() {
       //Available queue, also move the corresponding map
       //to the Complete queue
       sem_wait(workers_not_empty);
-      
+      printf("master woke up\n");
       for (i=0;i<NUM_WORKERS;i++) {
 	if (masterInfo.finished[i] != 0) {
 	  break;

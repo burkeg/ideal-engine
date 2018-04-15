@@ -177,6 +177,7 @@ int main (int argc, char *argv[]) {
   //Cleanup after finished
   
   if (pid != 0) {
+    sem_wait(sem_master_completed);
     /* shared memory detach */
     shmdt (barrier_count);
 

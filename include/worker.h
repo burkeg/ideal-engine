@@ -4,6 +4,6 @@
 #include "idealEngine.h"
 
 void work(int);
-void printProgress();
+void printProgress(int);
 int fib(int n);
 #endif
