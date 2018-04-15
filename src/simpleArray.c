@@ -66,9 +66,13 @@ void removeByValue(simpleArray * buffer, int value) {
 
 void printBuff(simpleArray * buffer) {
   int i;
-  char strBuff[256];
+  char strBuff[128];
   sprintf(strBuff,"{");
   for (i = 0; i < buffer->head;i++) {
+    if (strlen(strBuff) >= 125) {
+      sprintf(strBuff+strlen(strBuff),"...");
+      break;
+    } 
     sprintf(strBuff+strlen(strBuff),"%d,",buffer->data[i]);
   }
   sprintf(strBuff+strlen(strBuff),"}\n");

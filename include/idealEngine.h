@@ -19,9 +19,9 @@
 #include "simpleArray.h"
 
 
-#define NUM_PARTITIONS_MAP 8
-#define NUM_PARTITIONS_REDUCE 8
-#define NUM_WORKERS 4
+#define NUM_PARTITIONS_MAP 500
+#define NUM_PARTITIONS_REDUCE 500
+#define NUM_WORKERS 8
 
 //Worker status
 #define IDLE 0
@@ -37,6 +37,14 @@
 #define MAPPER_SHM_SIZE 4
 #define REDUCER_SHM_SIZE 4
 #define FILENAMES_SHM_SIZE 4
+
+#define MAX_VALUE_LENGTH 20
+#define MAX_KEYS_PER_MAPPER 100
+
+typedef struct kv_pair {
+  long int key;
+  char value[MAX_VALUE_LENGTH];
+} kv_pair;
 
 typedef struct partition_bounds {
   long int start;

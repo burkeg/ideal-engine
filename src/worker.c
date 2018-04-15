@@ -50,7 +50,7 @@ void work(int workerID) {
   srand(0);
   while (1) {
     sem_wait(sem_start);
-    printf("Mapper %d woke up\n",workerID);
+    //printf("Mapper %d woke up\n",workerID);
     if (workerInfo.finished[NUM_WORKERS]==1) {
       //printf("Mapper %d broke out\n",workerID);
       break;
@@ -73,9 +73,9 @@ void work(int workerID) {
     //wait on start signal
     //printf(":sem_start wait %d\n",workerID);
     sem_wait(sem_start);
-    printf("--Reducer %d woke up\n",workerID);
+    //printf("--Reducer %d woke up\n",workerID);
     if (workerInfo.finished[NUM_WORKERS]==1) {
-      printf("Reducer %d broke out\n",workerID);
+      //printf("Reducer %d broke out\n",workerID);
       break;
     }
 

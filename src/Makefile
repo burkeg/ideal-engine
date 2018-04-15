@@ -8,7 +8,7 @@ LDIR =../lib
 _DEPS = idealEngine.h
 DEPS = $(patsubst %,$(IDIR)/%,$(_DEPS))
 
-_OBJ = idealEngine.o master.o worker.o semUtils.o userFuncts.o simpleArray.o shmWrapper.o
+_OBJ = idealEngine.o master.o worker.o semUtils.o userFuncts.o simpleArray.o shmWrapper.o dataManager.o
 OBJ = $(patsubst %,$(ODIR)/%,$(_OBJ))
 
 
@@ -16,7 +16,7 @@ $(ODIR)/%.o: %.c $(DEPS)
 	$(CC) -c -o $@ $< $(CFLAGS)
 
 idealEngine: $(OBJ)
-	gcc -o $@ $^ $(CFLAGS) -lpthread -lrt -lm
+	gcc -o $@ $^ $(CFLAGS) -lpthread -lrt -lm -lbsd
 
 .PHONY: clean
 clean:

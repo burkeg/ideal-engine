@@ -289,14 +289,14 @@ void delegateTasks() {
   while (!isFull(reducersUnavailable)) {
     //While there are no avaliable workers, wait for a signal
     //that a worker has completed
-    printf("### mappers Available\n");
+    //printf("### mappers Available\n");
     if (isEmpty(workersAvailable)) {
-      printf("### No workers available\n");
+      //printf("### No workers available\n");
       //find a worker that finished and move it to the
       //Available queue, also move the corresponding map
       //to the Complete queue
       sem_wait(workers_not_empty);
-      printf("master woke up\n");
+      //printf("master woke up\n");
       for (i=0;i<NUM_WORKERS;i++) {
 	if (masterInfo.finished[i] != 0) {
 	  break;
@@ -308,34 +308,34 @@ void delegateTasks() {
       masterInfo.workerInfo[0].finished[i]=0;
       //mapper now unavailable
       
-      printf("reducersUnavailable ");
-      printBuff(reducersUnavailable);
+      //printf("reducersUnavailable ");
+      //printBuff(reducersUnavailable);
       //worker no longer available
       removeByValue(workersAvailable,*(masterInfo.workerInfo[i].task_index));
-      printf("workersAvailable ");
-      printBuff(workersAvailable);
+      //printf("workersAvailable ");
+      //printBuff(workersAvailable);
       
       //worker now available
       push(workersAvailable,i);
-      printf("workersAvailable ");
-      printBuff(workersAvailable);
+      //printf("workersAvailable ");
+      //printBuff(workersAvailable);
 
       //worker no longer unavailable
       removeByValue(workersUnavailable,i);
-      printf("workersUnavailable ");
-      printBuff(workersUnavailable);
+      //printf("workersUnavailable ");
+      //printBuff(workersUnavailable);
     }
     //There is at least 1 worker that is free to do a map
 
     //Choose a worker to give a job
     freeWorker=pop(workersAvailable);
-    printf("workersAvailable ");
-    printBuff(workersAvailable);
+    //printf("workersAvailable ");
+    //printBuff(workersAvailable);
     deployedReduce=pop(reducersAvailable);
-    printf("reducersAvailable ");
-    printBuff(reducersAvailable);
+    //printf("reducersAvailable ");
+    //printBuff(reducersAvailable);
     
-    printf("### Worker %d selected to do reducing %d.\n",freeWorker,deployedReduce);
+    //printf("### Worker %d selected to do reducing %d.\n",freeWorker,deployedReduce);
     //Populate the shared memory of that worker with the
     //up-to-date copy from master
     populateShm(freeWorker,deployedReduce,REDUCER);

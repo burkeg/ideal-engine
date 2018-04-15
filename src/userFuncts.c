@@ -1,21 +1,28 @@
 #include <math.h>
+#include <stdio.h>
+#include <stdlib.h>
 #include "idealEngine.h"
 
 void map () {
-  int sum,i;
+  int sum,i,lim;
   sum=0;
-  for (i=0; i < 10000; i++) {
+  //  lim=10000000+rand()%10000000;
+  lim=500;
+  for (i=0; i < lim; i++) {
     sum += sin((double)i);
+    //i+=rand()%5;
   }
 }
 
 void reduce () {
-  int sum,i;
+  int sum,i,lim;
   sum=0;
-  for (i=0; i < 10000; i++) {
+  //  lim=10000000+rand()%10000000;
+  lim=500;
+  for (i=0; i < lim; i++) {
     sum += sin((double)i);
+    //i+=rand()%5;
   }
-
 }
 
 /*
@@ -39,6 +46,16 @@ long int ** find_partition_bounds() {
     bounds[i][1]=i*2+1;
   }
   return bounds;
+}
+
+void inputReader(char *inputFilename) {
+  FILE * fp;
+  if ((fp=fopen(inputFilename,"r"))==NULL) {
+    printf("failed to read input file\n");
+    return;
+  }
+  
+  
 }
 /*
   Must return NUM_PARTITIONS_MAP strings
