@@ -4,8 +4,9 @@
 
 void map ();
 void reduce ();
-long int ** find_partition_bounds(char *inputFilename);
+long int ** find_partition_bounds();
 void inputReader(char *);
+int findFirstNewline(char * stringData, int len);
 char ** specify_intermediate_filenames();
 
 #endif

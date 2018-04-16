@@ -98,12 +98,15 @@ void work(int workerID) {
   printf("Worker %d detached from Shm\n",workerID);
 }
 
+
 void printProgress(int ID) {
-  char str[NUM_WORKERS-1];
+  char str[NUM_WORKERS+1];
   int i;
+  printf("%d\n",NUM_WORKERS);
   for (i = 0; i < NUM_WORKERS; i++) {
-    str[NUM_WORKERS-1-i]=workerInfo.finished[i]? '1'+i : ' ';
+    str[i]=workerInfo.finished[i] ? '1'+i : ' ';
   }
+  str[NUM_WORKERS]='\0';
   printf("worker %d status: [%s] %d\n",ID,str,workerInfo.finished[NUM_WORKERS]);
 }
 

@@ -26,6 +26,9 @@ int main (int argc, char *argv[]) {
   char * master_str = "mSem";
   char * completed_str = "cSem";
   int myID;
+
+  inputReader("input.dat");
+  return 0;
   exe_name = argv[0];
   printf("FIRST PID:%d\n",getpid());
   
