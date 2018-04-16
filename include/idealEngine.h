@@ -41,6 +41,11 @@
 #define MAX_VALUE_LENGTH 20
 #define MAX_KEYS_PER_MAPPER 100
 
+typedef struct kv_pairs {
+  int count;
+  kv_pair ** pairs;
+} kv_pairs;
+
 typedef struct kv_pair {
   long int key;
   char value[MAX_VALUE_LENGTH];

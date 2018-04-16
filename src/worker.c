@@ -57,8 +57,19 @@ void work(int workerID) {
     }
 
     //critical section
-    map();
-
+    
+    //provide mapper key/value inputs
+    kv_pairs * produce_map_kvs(*(workerInfo.task_index));
+    
+    map(kv_pairs);
+    
+    //free mapper key/value pairs
+    for (i = 0; i < kv_pairs->count; i++) {
+      free(kv_pairs->pairs[i]);
+    }
+    free(kv_pairs->pairs);
+    free(kv_pairs);
+      
     workerInfo.finished[workerID-1]=1;
     
     //printf(":%s posted %d\n",workers_not_empty_str,workerID);

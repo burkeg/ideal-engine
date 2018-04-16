@@ -131,3 +131,7 @@ char ** specify_intermediate_filenames() {
   }
   return names;
 }
+
+kv_pairs * produce_map_kvs(int mapID,partition_bounds bounds) {
+  return (void *)NULL;
+}
