@@ -2,7 +2,9 @@
 #include <math.h>
 #include "shmWrapper.h"
 #include "userFuncts.h"
+#include "idealEngineTypes.h"
 worker_data workerInfo;
+char * input_filename = "input.dat";
 
 void work(int workerID) {
   printf("Entering worker loop\n");
@@ -18,8 +20,8 @@ void work(int workerID) {
   sem_t *sem_start;
   char *worker_tmp_name;
   int i,sum;
-  char filecontent[30];
-  
+  long int * map_bounds;
+  kv_pairs * key_val_pairs;
 
   raw_data= (unsigned char *) shmat (attachShm(workerID), NULL, 0);
   //visualize mapped memory
@@ -50,25 +52,35 @@ void work(int workerID) {
   srand(0);
   while (1) {
     sem_wait(sem_start);
-    //printf("Mapper %d woke up\n",workerID);
+    printf("Mapper %d woke up to do %d\n",workerID,*(workerInfo.task_index));
+    //printf("workerInfo.finished[NUM_WORKERS] = %d\n",workerInfo.finished[NUM_WORKERS]);
     if (workerInfo.finished[NUM_WORKERS]==1) {
       //printf("Mapper %d broke out\n",workerID);
       break;
     }
 
+
+    map_bounds=(long int *)shmat(attachShm(NUM_WORKERS+NUM_PARTITIONS_MAP+NUM_PARTITIONS_REDUCE+3),NULL,0);
+
     //critical section
+
+    
+    partition_bounds bounds;
+    bounds.start=map_bounds[*(workerInfo.task_index)*2];
+    bounds.end  =map_bounds[*(workerInfo.task_index)*2+1];
     
     //provide mapper key/value inputs
-    kv_pairs * produce_map_kvs(*(workerInfo.task_index));
-    
-    map(kv_pairs);
+    key_val_pairs = produce_map_kvs(*(workerInfo.task_index),&bounds);
+    printf("made it here\n");
+    //
+    map(key_val_pairs);
     
     //free mapper key/value pairs
-    for (i = 0; i < kv_pairs->count; i++) {
-      free(kv_pairs->pairs[i]);
+    for (i = 0; i < key_val_pairs->count; i++) {
+      free(key_val_pairs->pairs[i]);
     }
-    free(kv_pairs->pairs);
-    free(kv_pairs);
+    free(key_val_pairs->pairs);
+    free(key_val_pairs);
       
     workerInfo.finished[workerID-1]=1;
     
@@ -78,7 +90,7 @@ void work(int workerID) {
     //signal finished
   }
 
-  printf("Stuck before sem_start_reduce %d\n",workerID);
+  //printf("Stuck before sem_start_reduce %d\n",workerID);
   sem_wait(sem_start_reduce);
   while (1) {
     //wait on start signal
@@ -113,7 +125,6 @@ void work(int workerID) {
 void printProgress(int ID) {
   char str[NUM_WORKERS+1];
   int i;
-  printf("%d\n",NUM_WORKERS);
   for (i = 0; i < NUM_WORKERS; i++) {
     str[i]=workerInfo.finished[i] ? '1'+i : ' ';
   }

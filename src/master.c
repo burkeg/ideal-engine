@@ -10,18 +10,9 @@ void initMaster() {
   long int **bound;
   //  char **filenames;
   int idCount=1;
-  printf("entered initMaster\n");
-  bound = find_partition_bounds("input.dat");
+  bound = inputReader("input.dat");
   //get user allocated partition bounds
-  printf("found partition bounds\n");
 
-  for (i=0;i<NUM_PARTITIONS_MAP;i++) {
-    masterInfo.mapInfo[i].mapBound.start=bound[i][0];
-    masterInfo.mapInfo[i].mapBound.end=bound[i][1];
-    free(bound[i]); //Free partition bounds
-  }
-  //Free partition bounds
-  free(bound);
 
   /* //sanity check
      for (i=0;i<NUM_PARTITIONS_MAP;i++) {
@@ -31,10 +22,13 @@ void initMaster() {
   int tmp;
   tmp=idCount;
   //Worker data
+  createShm(sizeof(long int)*2*NUM_PARTITIONS_MAP,NUM_WORKERS+NUM_PARTITIONS_MAP+NUM_PARTITIONS_REDUCE+3);
   for (i=0;i<NUM_WORKERS;i++) {
     createShm(sizeof (int)*4,idCount);
 
     masterInfo.workerInfo[i].mmapping = (int *) shmat (attachShm(idCount), NULL, 0);
+    masterInfo.workerInfo[i].mapper_bounds = (long int *) shmat (attachShm(NUM_WORKERS+NUM_PARTITIONS_MAP+NUM_PARTITIONS_REDUCE+3), NULL, 0);
+
     //populate the master data structure with useful worker process
     //information
     masterInfo.workerInfo[i].worker_type=&(masterInfo.workerInfo[i].mmapping[0]);
@@ -58,8 +52,9 @@ void initMaster() {
     masterInfo.mapInfo[i].shmBuffer = (long int *) shmat (attachShm(idCount), NULL, 0);
     //give each mapper its start and end splice bounds from the
     //original input dataset
-    masterInfo.mapInfo[i].shmBuffer[0]=masterInfo.mapInfo[i].mapBound.start;
-    masterInfo.mapInfo[i].shmBuffer[1]=masterInfo.mapInfo[i].mapBound.start;
+    masterInfo.mapInfo[i].shmBuffer[0]=bound[i][0];
+    masterInfo.mapInfo[i].shmBuffer[1]=bound[i][1];
+    printf("Placing start,end () into ");
     idCount++;
   }
 
@@ -112,8 +107,15 @@ void initMaster() {
 
 
 
+  //masterInfo.workerInfo[i].mapper_bounds;
 
-
+  for (i=0;i<NUM_PARTITIONS_MAP;i++) {
+    masterInfo.workerInfo[0].mapper_bounds[i*2]=bound[i][0];
+    masterInfo.workerInfo[0].mapper_bounds[i*2+1]=bound[i][1];
+    free(bound[i]); //Free partition bounds
+  }
+  //Free partition bounds
+  free(bound);
   
 }
 
@@ -175,7 +177,7 @@ void delegateTasks() {
     //printf("Master (avail %d) (unavail %d)\n",len(mappersAvailable),len(mappersUnavailable));
     //While there are no avaliable workers, wait for a signal
     //that a worker has completed
-    //printf("### mappers Available\n");
+    printf("### mappers Available\n");
     if (isEmpty(workersAvailable)) {
       //printf("### No workers available\n");
       //find a worker that finished and move it to the

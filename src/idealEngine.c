@@ -27,8 +27,9 @@ int main (int argc, char *argv[]) {
   char * completed_str = "cSem";
   int myID;
 
-  inputReader("input.dat");
-  return 0;
+  input_filename = "input.dat";
+  inputReader(input_filename);
+  //return 0;
   exe_name = argv[0];
   printf("FIRST PID:%d\n",getpid());
   
@@ -122,7 +123,7 @@ int main (int argc, char *argv[]) {
     sem_post(sem_master_completed);
     
     return 0;
-    printf("PULLING HAIR OUT");
+    printf("PULLING HAIR OUT\n");
   }
   //  sem_wait(fork_sem);
   //printf("Should make through but not enter 2nd stage yet\n");
