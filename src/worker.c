@@ -71,10 +71,11 @@ void work(int workerID) {
     
     //provide mapper key/value inputs
     key_val_pairs = produce_map_kvs(*(workerInfo.task_index),&bounds);
-    printf("made it here\n");
+    printf("made it here %d\n",key_val_pairs->count);
     //
     map(key_val_pairs);
     
+    printf("made it here too\n");
     //free mapper key/value pairs
     for (i = 0; i < key_val_pairs->count; i++) {
       free(key_val_pairs->pairs[i]);

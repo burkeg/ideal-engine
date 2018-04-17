@@ -28,7 +28,9 @@ int main (int argc, char *argv[]) {
   int myID;
 
   input_filename = "input.dat";
+  printf("I made it here\n");
   inputReader(input_filename);
+  printf("I made it here too\n");
   //return 0;
   exe_name = argv[0];
   printf("FIRST PID:%d\n",getpid());

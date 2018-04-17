@@ -21,8 +21,8 @@
 #define REDUCER_SHM_SIZE 4
 #define FILENAMES_SHM_SIZE 4
 
-#define MAX_VALUE_LENGTH 20
-#define MAX_KEYS_PER_MAPPER 100
+#define MAX_VALUE_LENGTH 100
+#define MAX_KEYS_PER_MAPPER 1000
 
 typedef struct kv_pair {
   long int key;

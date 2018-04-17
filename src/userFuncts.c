@@ -6,31 +6,30 @@
 #include "idealEngineTypes.h"
 
 /*
-void map (kv_pairs * key_values) {
+  void map (kv_pairs * key_values) {
   int sum,i,lim;
   sum=0;
   // lim=10000000+rand()%10000000;
   lim=500;
   for (i=0; i < lim; i++) {
-    sum += sin((double)i);
-    i+=rand()%5;
+  sum += sin((double)i);
+  i+=rand()%5;
   }
-}//*/
+  }//*/
 
 void map (kv_pairs * key_values) {
   int i;
   char buff[100];
-  sprintf(buff,"MAP PRODUCED: -----------------------");
+  sprintf(buff,"MAP PRODUCED: ");
   for (i = 0; i < key_values->count; i++) {
-    //printf("progress");
     if (strlen(buff) > 90) {
-      sprintf(buff,"...");
+      sprintf(buff+strlen(buff),"...");
       break;
     }
     sprintf(buff+strlen(buff),"[%s] ",key_values->pairs[i]->value);
   }
   sprintf(buff+strlen(buff),"\n");
-  printf("%s",buff);
+  printf("%s\n",buff);
 }
 
 void reduce () {
@@ -80,7 +79,7 @@ long int ** inputReader(char *inputFilename) {
   }
   fseek(fp, 0L, SEEK_END);
   size = ftell(fp);
-  printf("size: %d\n",(int)size);
+  //printf("size: %d\n",(int)size);
   fseek(fp,0,SEEK_SET);
   start_indexes[0]=0;
   count = 1;
@@ -99,9 +98,9 @@ long int ** inputReader(char *inputFilename) {
 	flag=1;
       }
       fseek(fp,base_to_search,SEEK_SET);
-      printf("base / len_to_search: %d %d\n,",(int)base_to_search,(int)len_to_search);
+      //printf("base / len_to_search: %d %d\n,",(int)base_to_search,(int)len_to_search);
       fread (newlineBuff,sizeof(char),len_to_search,fp);
-      printf("newlineBuff: [%s]\n",newlineBuff);
+      //printf("newlineBuff: [%s]\n",newlineBuff);
       if ((result=findFirstNewline(newlineBuff,len_to_search)) == -1) {
 	if (flag) {
 	  printf("failed to partition input data.\n");
@@ -127,7 +126,7 @@ long int ** inputReader(char *inputFilename) {
     fseek(fp,bounds[i][0],SEEK_SET);
     fread(newlineBuff,sizeof(char),bounds[i][1]-bounds[i][0]+1,fp);
     newlineBuff[bounds[i][1]-bounds[i][0]+1]='\0';
-    printf("Partition %d [%d,%d]: {\n%s}\n",i,bounds[i][0],bounds[i][1],newlineBuff);
+    //printf("Partition %d [%d,%d]: {\n%s}\n",i,bounds[i][0],bounds[i][1],newlineBuff);
   }
   return bounds;
   
@@ -183,18 +182,20 @@ kv_pairs * produce_map_kvs(int mapID,partition_bounds *bounds) {
       printf("Line too long to fix into kv pair. (limit %d, offender %d)\n",MAX_VALUE_LENGTH, (int)read);
       return (void *)NULL;
     }
+    //printf("kvs_index: %d\n",kvs_index);
     // if we allocated too many keys, double key array capacity
     if (kvs_index == num_kvs) {
+      //printf("@@@@@@@@@DOUBLING MEMORY@@@@@@@@@@@%d\n",mapID);
       num_kvs*=2;
-      pairs_new=realloc(pairs->pairs,num_kvs);
+      pairs_new=realloc(pairs->pairs,sizeof(kv_pair*)*num_kvs);
       //check to see if realloc worked
       if (pairs_new == NULL) {
 	printf("failed to realloc more kv_pairs\n");
 	free(pairs->pairs);
 	return (void *)NULL; 
-	  } else {
+      } else {
 	//since realloc worked, allocate each kv_pair
-
+	//printf("successfully realloced, now at %d capacity\n",num_kvs);
 	pairs->pairs = pairs_new;
 	for (i = num_kvs/2; i < num_kvs; i++) {
 	  pairs->pairs[i]=malloc(sizeof(kv_pair));
@@ -205,13 +206,11 @@ kv_pairs * produce_map_kvs(int mapID,partition_bounds *bounds) {
 	}
       }
     }
-
+    
     //guarantees that pairs->pairs[kvs_index] is allocated
     //line also guaranteed to fit into value string buffer
-    printf("{%s}\n",line);
     strncpy(&(pairs->pairs[kvs_index]->value[0]),line,read);
     pairs->pairs[kvs_index]->value[read-1]='\0';
-    printf("^{%s}^\n",pairs->pairs[kvs_index]->value);
     kvs_index++;
     if (sum > size) {
       break;
@@ -220,7 +219,7 @@ kv_pairs * produce_map_kvs(int mapID,partition_bounds *bounds) {
   
   free(line);
   pairs->count = kvs_index;
-  //*
+  /*
   for (i = 0; i < pairs->count; i++) {
     printf("value %d: [%s]\n",i,pairs->pairs[i]->value);
   }
