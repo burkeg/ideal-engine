@@ -209,6 +209,7 @@ kv_pairs * produce_map_kvs(int mapID,partition_bounds *bounds) {
     
     //guarantees that pairs->pairs[kvs_index] is allocated
     //line also guaranteed to fit into value string buffer
+    printf("line:[%s] size: %d\n",line,read);
     strncpy(&(pairs->pairs[kvs_index]->value[0]),line,read);
     pairs->pairs[kvs_index]->value[read-1]='\0';
     kvs_index++;
