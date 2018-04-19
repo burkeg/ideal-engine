@@ -29,9 +29,8 @@ int main (int argc, char *argv[]) {
 
   input_filename = "input.dat";
   printf("I made it here\n");
-  inputReader(input_filename);
+  //  inputReader(input_filename);
   printf("I made it here too\n");
-  //return 0;
   exe_name = argv[0];
   printf("FIRST PID:%d\n",getpid());
   
@@ -172,9 +171,9 @@ int main (int argc, char *argv[]) {
     sem_post(sem_master_ready);
     //    sem_wait(sem_master_completed);
   }
-  printf("%d before\n",getpid());
+  //printf("%d before\n",getpid());
   barrier(fork_sem,mutex,barrier_count,NUM_WORKERS);
-  printf("%d after\n",getpid());
+  //printf("%d after\n",getpid());
   printf("Got past worker barrier %d.\n",getpid());
   work(myID);
   

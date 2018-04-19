@@ -2,9 +2,9 @@
 #define IDEAL_ENGINE_TYPES_H
 
 
-#define NUM_PARTITIONS_MAP 8
+#define NUM_PARTITIONS_MAP 100
 #define NUM_PARTITIONS_REDUCE 16
-#define NUM_WORKERS 3
+#define NUM_WORKERS 8
 
 //Worker status
 #define IDLE 0

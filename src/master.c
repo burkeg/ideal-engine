@@ -11,6 +11,7 @@ void initMaster() {
   //  char **filenames;
   int idCount=1;
   bound = inputReader("input.dat");
+  printf("entering initMaster\n");
   //get user allocated partition bounds
 
 
@@ -54,7 +55,7 @@ void initMaster() {
     //original input dataset
     masterInfo.mapInfo[i].shmBuffer[0]=bound[i][0];
     masterInfo.mapInfo[i].shmBuffer[1]=bound[i][1];
-    printf("Placing start,end () into ");
+    //printf("Placing start,end () into ");
     idCount++;
   }
 

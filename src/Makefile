@@ -48,3 +48,9 @@ veryclean:
 	bash cleanUpShm.sh;\
 	pkill idealEngine;\
 	$(MAKE) clean
+
+.PHONY: vcr
+vcr:
+	$(MAKE) veryclean	
+	$(MAKE) 	
+	$(MAKE) run

@@ -22,7 +22,7 @@ void map (kv_pairs * key_values) {
   char buff[100];
   sprintf(buff,"MAP PRODUCED: ");
   for (i = 0; i < key_values->count; i++) {
-    if (strlen(buff) > 90) {
+    if (strlen(buff) + strlen(key_values->pairs[i]->value) > 99) {
       sprintf(buff+strlen(buff),"...");
       break;
     }
@@ -57,12 +57,13 @@ void reduce () {
 long int ** find_partition_bounds() {
   long int ** bounds;
   int i;
-  bounds = malloc(sizeof(long int) * NUM_PARTITIONS_MAP);
+  bounds = malloc(sizeof(long int *) * NUM_PARTITIONS_MAP);
   for (i=0;i<NUM_PARTITIONS_MAP;i++) {
     bounds[i]=malloc(sizeof(long int) * 2);
     bounds[i][0]=i*2;
     bounds[i][1]=i*2+1;
   }
+  printf("exiting find_partition_bounds\n");
   return bounds;
 }
 
@@ -71,7 +72,7 @@ long int ** inputReader(char *inputFilename) {
   long int size;
   int start_indexes[NUM_PARTITIONS_MAP];
   int count,result,base_to_search,len_to_search,flag,sum,i;
-  char newlineBuff[200];
+  char newlineBuff[100];
   long int ** bounds;
   if ((fp=fopen(inputFilename,"r"))==NULL) {
     printf("failed to read input file\n");
@@ -79,7 +80,7 @@ long int ** inputReader(char *inputFilename) {
   }
   fseek(fp, 0L, SEEK_END);
   size = ftell(fp);
-  //printf("size: %d\n",(int)size);
+  printf("size: %d\n",(int)size);
   fseek(fp,0,SEEK_SET);
   start_indexes[0]=0;
   count = 1;
@@ -88,6 +89,7 @@ long int ** inputReader(char *inputFilename) {
   bounds=find_partition_bounds();
   bounds[0][0]=0;
   for (i=1;i<NUM_PARTITIONS_MAP;i++) {
+    //printf("i: %d\n",i);
     base_to_search=(size/NUM_PARTITIONS_MAP)*i;
     len_to_search=5;
     sum=0;
@@ -98,47 +100,57 @@ long int ** inputReader(char *inputFilename) {
 	flag=1;
       }
       fseek(fp,base_to_search,SEEK_SET);
-      //printf("base / len_to_search: %d %d\n,",(int)base_to_search,(int)len_to_search);
+      printf("base / len_to_search / sum: %d %d %d\n,",(int)base_to_search,(int)len_to_search,sum);
       fread (newlineBuff,sizeof(char),len_to_search,fp);
-      //printf("newlineBuff: [%s]\n",newlineBuff);
+      printf("newlineBuff: [%s]\n",newlineBuff);
       if ((result=findFirstNewline(newlineBuff,len_to_search)) == -1) {
 	if (flag) {
 	  printf("failed to partition input data.\n");
 	  return (void *) NULL;
 	}
-	sum+=result;
 	base_to_search+=5;
 	continue;
       }
-      sum+=result;
       break;
     }
-    start_indexes[i]=(size/NUM_PARTITIONS_MAP)*i+sum+1;
-    //fseek(fp,start_indexes[i],SEEK_SET);
-    //fread(newlineBuff,1,5,fp);
+    start_indexes[i]=base_to_search+result + 1;
+    fseek(fp,start_indexes[i],SEEK_SET);
+    fread(newlineBuff,1,5,fp);
     bounds[i-1][1]=start_indexes[i]-1;
     bounds[i][0]=start_indexes[i];
-    //printf("found index %d, [%s].\n",start_indexes[i],newlineBuff);
+    printf("found index %d, [%s].\n",start_indexes[i],newlineBuff);
   }
   bounds[NUM_PARTITIONS_MAP-1][1]=size-1;
   
   for (i = 0; i < NUM_PARTITIONS_MAP; i++) {
     fseek(fp,bounds[i][0],SEEK_SET);
-    fread(newlineBuff,sizeof(char),bounds[i][1]-bounds[i][0]+1,fp);
-    newlineBuff[bounds[i][1]-bounds[i][0]+1]='\0';
-    //printf("Partition %d [%d,%d]: {\n%s}\n",i,bounds[i][0],bounds[i][1],newlineBuff);
+    if (bounds[i][1]-bounds[i][0]+1 >= 90) {
+      fread(newlineBuff,sizeof(char),90,fp);
+      newlineBuff[90]='\0';
+      printf("Partition %d [%d,%d]: {\n%s...}\n",i,bounds[i][0],bounds[i][1],newlineBuff);
+    } else {
+      fread(newlineBuff,sizeof(char),bounds[i][1]-bounds[i][0]+1,fp);
+      newlineBuff[bounds[i][1]-bounds[i][0]+1]='\0';
+      printf("Partition %d [%d,%d]: {\n%s}\n",i,bounds[i][0],bounds[i][1],newlineBuff);
+    }
   }
+  //printf("Exiting inputReader\n");
   return bounds;
   
 }  
 int findFirstNewline(char * stringData, int len) {
   int i;
+  //  printf("findFirstNewline {%s}\n",stringData);
   for (i = 0; i < len; i++) {
-    if (stringData[i] == '\n') 
+    //printf("looking at [%c]\n",stringData[i]);
+    if (stringData[i] == '\n') {
+      printf("Found first newline, [%s], index %d\n",stringData,i);
       return i;
+    }
   }
   return -1;
 }
+
 /*
   Must return NUM_PARTITIONS_MAP strings
   each string can be up to 255 characters long
@@ -209,7 +221,7 @@ kv_pairs * produce_map_kvs(int mapID,partition_bounds *bounds) {
     
     //guarantees that pairs->pairs[kvs_index] is allocated
     //line also guaranteed to fit into value string buffer
-    printf("line:[%s] size: %d\n",line,read);
+    //printf("line:[%s] size: %d\n",line,read);
     strncpy(&(pairs->pairs[kvs_index]->value[0]),line,read);
     pairs->pairs[kvs_index]->value[read-1]='\0';
     kvs_index++;
@@ -221,9 +233,9 @@ kv_pairs * produce_map_kvs(int mapID,partition_bounds *bounds) {
   free(line);
   pairs->count = kvs_index;
   /*
-  for (i = 0; i < pairs->count; i++) {
+    for (i = 0; i < pairs->count; i++) {
     printf("value %d: [%s]\n",i,pairs->pairs[i]->value);
-  }
+    }
   //*/
   return pairs;
 }
